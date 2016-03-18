@@ -6,21 +6,17 @@ function ReadActions($file, $set)
 <#
 	Returns a list of actions from the file for the passed set 
 	A set is a collection of actions
-	Sample file with two sets RESTORE SYSTEST and RESTORE AG PRIMARY:
+	Sample file with two sets RESTORE SYSTEST and RESTORE SYSTEST WITH LOGS:
 	
 	RESTORE SYSTEST
-    	RESTORE DATABASE RECOVERY
-    	SET SA DBOWNER
-    	SET SIMPLE MODE
-    	SHRINK LOG
-    	SYNC LOGINS
-	RESTORE AG PRIMARY
-    	RESTORE DATABASE NORECOVERY
-    	RESTORE LOGS WITH RECOVERY
-    	SYNC LOGINS
+    	SQL|RESTORE DATABASE RECOVERY
+	RESTORE SYSTEST WITH LOGS
+		SQL|RESTORE DATABASE NORECOVERY
+		SQL|RESTORE LOG NORECOVERY
+		SQL|SET DATABASE RECOVERY
 		
 	Set actions start with a tab or spaces (indented)
-	Set names have no indentation (RESTORE SYSTEST, RESTORE AG PRIMARY)
+	Set names have no indentation (RESTORE SYSTEST, RESTORE SYSTEST WITH LOGS)
 	
 	If the set name is duplicated below in the file the other sets are discarded
 	Only the first one is used
