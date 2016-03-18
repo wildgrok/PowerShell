@@ -7,6 +7,7 @@
 
 # Import globals
 Set-Location 'D:\WORKFOLDER'
+. .\CONFIG.ps1
 
 
 $global:SQLSTORAGESTRING 	= ''
