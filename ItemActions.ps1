@@ -1,10 +1,5 @@
 #Version in workstation
-#Last modified
-#7/1/2015:  modified to use new CONFIG.ps1 file
-#6/25/2015: added backup database options, modified LogSQL
-#6/24/2015: added ReadActions
-#6/17/2015: tested restorelogs from inside restoredatabase
-#6/1/2015
+
 
 
 function ReadActions($file, $set)
@@ -57,11 +52,6 @@ function ReadActions($file, $set)
 	}
 	$list
 }
-#Set-Location 'D:\Users\jorgebe\Documents\powershell' 
-#$z = ReadActions 'D:\Users\jorgebe\Documents\powershell\ACTIONS.DAT' 'RESTORE SYSTEST'
-#$z
-
-
 
 function LogSQL($item, $sql)
 {
@@ -76,21 +66,6 @@ function LogSQL($item, $sql)
 	$s = $s + $sql 									+ $CR 
 	$s = $s + ' -------------------------------------------------------------- */' + $CR 
 	$global:SQLSTORAGESTRING = $global:SQLSTORAGESTRING + $s
-}
-
-function LogSQL_OLD($file, $item, $sql)
-{
-	if ($item['DBNAME2'] -and $item['DBNAME1']) { $db = $item['DBNAME2']}
-	else { $db = $item['DBNAME1']}
-	
-	$CR = [char]13 + [char]10
-	$s = '/* ------------------------------------------------------------'    + $CR
-	$s = $s + '--SQL Server: ' + $item['SERVERNAME'] 	+ $CR 
-	$s = $s + '--Database: ' + $db		+ $CR 
-	$s = $s + '--Date: ' + (Get-Date).ToString()		+ $CR + $CR
-	$s = $s + $sql 									+ $CR 
-	$s = $s + ' -------------------------------------------------------------- */' + $CR 
-	Add-Content $file $s
 }
 
 
