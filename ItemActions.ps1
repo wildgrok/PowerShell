@@ -350,7 +350,7 @@ function GetDiskSpace ($machinename)
 
 # --------------------PROGRAM START-------------------------------------
 
-Set-Location D:\Users\jorgebe\Documents\powershell
+Set-Location D:\WORKFOLDER
 . .\CONFIG.ps1
 . .\SQLSMO.ps1
 
