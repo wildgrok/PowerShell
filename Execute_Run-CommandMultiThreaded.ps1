@@ -1,7 +1,8 @@
 # Execute_Run-CommandMultiThreaded.ps1
+#Created by Jorge Besada
 
 
-# Calls Run-CommandMultiThreaded.ps1
+# Calls Run-CommandMultiThreaded.ps1 Authored by Ryan Witschger - http://www.Get-Blog.com
 # Expects parameters DBLIST and MaxThreads 
 # If MaxThreads is 0 it will use the total number of lines enabled in the text file
 
