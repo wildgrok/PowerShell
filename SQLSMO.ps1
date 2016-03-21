@@ -1,5 +1,6 @@
 #SQLSMO.ps1
-#version in GITHUB
+#Created by Jorge Besada
+
 
 #---------------FUNCTIONS---------------------------------------
 
