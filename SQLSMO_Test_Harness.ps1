@@ -1,3 +1,8 @@
+#SQLSMO_Test_Harness.ps1
+#Created by Jorge Besada
+#uncomment sections to test SQLSMO.ps1
+. .\SQLSMO.ps1
+
 <# TEST OF INVOKE-SQLCMD3 START
 
 $server = "localhost\sql2014"
