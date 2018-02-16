@@ -10,13 +10,13 @@
 Set-Location 'D:\WORKFOLDER'
 . .\CONFIG.ps1
 
-
+<# contents of CONFIG.ps1
 $global:SQLSTORAGESTRING 	= ''
 $global:LOGSQLFILE 		= 'SQLLOG.SQL'
 $global:ACTIONSFILE 		= 'ACTIONS.DAT'
 $global:DBLIST 			= 'DBLIST_ACTIONS_DEMO.CSV'
 $global:MAXTHREADS 		= 0
-
+#>
 
 # used for automatic thread option: 
 function CountEnabledLines($file)
