@@ -1,4 +1,4 @@
 SERVERNAME,DBNAME1,SOURCESERVER,DATAFOLDER,LOGFOLDER,DBNAME2,ACTIONS,ENABLED
-"stsql3.shiptech.carnival.com,3655",ZZZ_Deleteme,\\zzsql4n1.shipdev.carnival.com\sqlbackups,F:\SQLDATA,E:\SQLLOGS,ZZZ_Deleteme_COPY2,RESTORE SYSTEST,Y
-"stsql3.shiptech.carnival.com,3655",ZZZ_Deleteme,\\zzsql4n1.shipdev.carnival.com\sqlbackups,F:\SQLDATA,E:\SQLLOGS,ZZZ_Deleteme_COPY3,RESTORE SYSTEST,Y
-"stsql3.shiptech.carnival.com,3655",ZZZ_Deleteme,\\zzsql4n1.shipdev.carnival.com\sqlbackups,F:\SQLDATA,E:\SQLLOGS,ZZZ_Deleteme_COPY4,RESTORE SYSTEST WITH LOGS,Y
+"SQLSERVERNAME,8888",ZZZ_Deleteme,\\SHAREPLACE\sqlbackups,F:\SQLDATA,E:\SQLLOGS,ZZZ_Deleteme_COPY2,RESTORE SYSTEST,Y
+"SQLSERVERNAME,8888",ZZZ_Deleteme,\\SHAREPLACE\sqlbackups\sqlbackups,F:\SQLDATA,E:\SQLLOGS,ZZZ_Deleteme_COPY3,RESTORE SYSTEST,Y
+"SQLSERVERNAME,8888",ZZZ_Deleteme,\\SHAREPLACE\sqlbackups\sqlbackups,F:\SQLDATA,E:\SQLLOGS,ZZZ_Deleteme_COPY4,RESTORE SYSTEST WITH LOGS,Y
