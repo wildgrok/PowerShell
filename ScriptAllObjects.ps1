@@ -29,7 +29,7 @@ function Invoke-Sqlcmd3 ($ServerInstance,$Query, $Database)
 	}
 }
 
-
+# Initial version: https://stackoverflow.com/questions/40388903/how-to-list-tables-in-their-dependency-order-based-on-foreign-keys
 $SQLTables =
 @"
 with        cte (lvl,object_id,name)
