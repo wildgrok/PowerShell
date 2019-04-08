@@ -1,4 +1,4 @@
-#version in \\ccluatsql1\OPCONJOBS\MasterApplicationList
+#version in C:\Users\jorgebe\Documents\powershell\MasterApplicationList
 $SQL_Reload_EnvironmentsAndApplications = @"
 	truncate table [Master_Application_List].[dbo].[Servers and Databases]
 	truncate table [Master_Application_List].[dbo].[Environments And Applications]
@@ -50,7 +50,7 @@ b.[Application_Name]
 ,b.[Application Owner]
 ,b.[Application_Tech]
 ,b.[Environment]
-,a.[SQLServer]
+,replace(a.[SQLServer], char(34), '') as 'SqlServer'
 ,a.[Database_Name]
 ,b.[ShoreSide_Shipboard]
 ,a.[SqlVersion]	 
