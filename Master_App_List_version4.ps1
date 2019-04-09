@@ -436,7 +436,7 @@ $global:SERVERNAME = "CCLDEVSHRDDB1\DEVSQL2"
 $ErrorActionPreference = "silentlycontinue"
 $CLUSTERNAMES = "ccldceshrdcl1", "ccluatdtscl2", "ccluatdtscl4" 
 $SAVESERVER = ""
-$CONCURRENCY = 15
+$CONCURRENCY = 20
 
 # COMMENTED FOR TESTING DO NO DELETE!!!
 
@@ -469,17 +469,18 @@ foreach ($k in $listofservers)
 		$running = @(Get-Job | Where-Object { $_.State -eq 'Running' })
 	    if ($running.Count -le $CONCURRENCY) 
 	    {
-			$null = Start-Job -ScriptBlock $CheckPing  -ArgumentList ($k.Machine, $global:SERVERNAME) 
-			$null = Start-Job -ScriptBlock $GetMachineType -ArgumentList ($k.Machine, $global:SERVERNAME) 
+			
+			Start-Job -ScriptBlock $CheckPing  -ArgumentList ($k.Machine, $global:SERVERNAME) 		| Out-Null
+			Start-Job -ScriptBlock $GetMachineType -ArgumentList ($k.Machine, $global:SERVERNAME)   | Out-Null
 		}
 		else
 	    { 
-			$running | Wait-Job 
+			$running | Wait-Job | out-null
 		}	
 	}
 }	
 
-$null = (Get-Job | Receive-Job) 
+(Get-Job | Receive-Job) | out-null
 
 Write-Host "End time two server tables: " (get-date)
 #=======================End of servers=================================
@@ -512,22 +513,22 @@ foreach ($x in $SqlServerList)	# ----------Start Outer Server Loop--------------
 	    $running = @(Get-Job  | Where-Object { $_.State -eq 'Running' })
 	    if ($running.Count -le $CONCURRENCY) 
 	    {
-			$null = (Start-Job -ScriptBlock $Fill_DB_Files -ArgumentList ($scurr, $SQL_Get_Database_Files_Query, $global:SERVERNAME) )
-            $null = (Start-Job -ScriptBlock $Fill_All_Logins -ArgumentList ($scurr, $SQL_GetLogins, $global:SERVERNAME)	)		
-			$null = (Start-Job -ScriptBlock $Fill_All_Users -ArgumentList ($scurr, $SQL_GetUsers, $global:SERVERNAME) )
-			$null = (Start-Job -ScriptBlock $Fill_Server_And_DBs -ArgumentList ($scurr, $SQL_Get_DBSFromServer, $global:SERVERNAME) ) 			
-			$null = (Start-Job -ScriptBlock $Fill_Missing_Backups -ArgumentList ($scurr, $SQL_GetBackupInfo, $global:SERVERNAME) )			
+			Start-Job -ScriptBlock $Fill_DB_Files -ArgumentList ($scurr, $SQL_Get_Database_Files_Query, $global:SERVERNAME)  	| Out-Null
+            Start-Job -ScriptBlock $Fill_All_Logins -ArgumentList ($scurr, $SQL_GetLogins, $global:SERVERNAME)					| Out-Null	
+			Start-Job -ScriptBlock $Fill_All_Users -ArgumentList ($scurr, $SQL_GetUsers, $global:SERVERNAME) 					| Out-Null
+			Start-Job -ScriptBlock $Fill_Server_And_DBs -ArgumentList ($scurr, $SQL_Get_DBSFromServer, $global:SERVERNAME)  	| Out-Null			
+			Start-Job -ScriptBlock $Fill_Missing_Backups -ArgumentList ($scurr, $SQL_GetBackupInfo, $global:SERVERNAME) 		| Out-Null		
 	    } 
 	    else
 	    {
-		    $running | Wait-Job
+		    $running | Wait-Job | Out-Null
 	    }	
 		
 		$cnt++
     }#---end of current server---
 } # ------------------------------------------------End Outer Server Loop---------------
 
-$null = (Get-Job | Receive-Job )
+(Get-Job | Receive-Job ) | out-null
 
 
 #Set-content -path c:\temp\svr.txt $SAVESERVER
