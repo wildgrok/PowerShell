@@ -3,127 +3,146 @@
 # Created on:   4/2/2019 11:06 AM
 # Created by:   jorgebe
 # Organization: 
-# Filename:     
+# Filename: 
+#https://devblogs.microsoft.com/scripting/powershell-workflows-the-basics/
 #========================================================================
 
 
 workflow paralleltest 
 {
-		#this does not work
-		#Write-Host "Started process of parallel"
-		InlineScript { Write-Output "Started process of parallel"}
-		
-		parallel 
-		{
 	
-	 		InlineScript 
-			{
-			# Imports
-. C:\Users\jorgebe\Documents\powershell\WorkFlows\WorkFlows_CodeBlocks.ps1
-<#			
-			#There is method in the madness: put your codeblock and functions here
-				#-------------Codeblocks Start----------------------------------------
-				$ExecuteSQL = 
-				{
-					param ($ServerInstance, $Query, $Database)
-					[System.Reflection.Assembly]::LoadWithPartialName("Microsoft.SqlServer.SMO") 			| Out-Null
-#					[System.Reflection.Assembly]::LoadWithPartialName("Microsoft.SqlServer.SmoExtended") 	| Out-Null
-#					[Reflection.Assembly]::LoadWithPartialName("Microsoft.SqlServer.ConnectionInfo") 		| Out-Null
-#					[Reflection.Assembly]::LoadWithPartialName("Microsoft.SqlServer.SmoEnum") 				| Out-Null
-				
-					
-					$QueryTimeout=600
-					$conn=new-object System.Data.SqlClient.SQLConnection
-					$constring = "Server=" + $ServerInstance + ";Trusted_Connection=True;database=" + $Database
-					$conn.ConnectionString=$constring
-					$conn.Open()
-					if($conn)
-					{
-				    	$cmd=new-object System.Data.SqlClient.SqlCommand($Query,$conn)
-				    	$cmd.CommandTimeout=$QueryTimeout
-				    	$ds=New-Object System.Data.DataSet
-				    	$da=New-Object System.Data.SqlClient.SqlDataAdapter($cmd)
-				    	[void]$da.fill($ds)
-				    	$conn.Close()
-						$ds.Tables[0]
-					}
-				}
+	param([string[]]$computers)
+	#this does not work
+	#Write-Host "Started process of parallel"
+	<#
+	If you want a set of commands to execute in parallel, 
+	all you need to do is add the parallel keyword 
+	and the code between the brackets {} will be executed in parallel.
+	In which order do you think the data will be returned?
+	You can’t tell! You can run this workflow a number of times 
+	and the data may be returned in a different order each time you run it!
+	#>
+	
+	
+	
+	
+	
+	
+	
+	InlineScript { Write-Output "Started process of parallel"}
+	<#
+	You can use the Parallel keyword to create a script block with multiple commands 
+	that will run concurrently. This uses the syntax shown below. 
+	In this case, Activity1 and Activity2 will start at the same time. 
+	Activity3 will start only after both Activity1 and Activity2 have completed.
+	Parallel
+	{
+	  <Activity1>
+	  <Activity2>
+	}
+	<Activity3>
+	#>
+	<#
+	   param([string[]]$computers)
+   foreach –parallel ($computer in $computers){
+
+	#>
+	
+#	$computers = 'CCLDEVSHRDDB1\DEVSQL2','CCLTSTSQL1\TSTSQL3'	
+#	parallel 
+#	{	
+		
+		foreach –parallel ($computer in $computers)
+		{
+		
+		
+	 	InlineScript 
+		{
 			
+		function Invoke-Sqlcmd3 ($ServerInstance,$Query)
+		{
+		[System.Reflection.Assembly]::LoadWithPartialName("Microsoft.SqlServer.SMO") 			| Out-Null
+#		[System.Reflection.Assembly]::LoadWithPartialName("Microsoft.SqlServer.SmoExtended") 	| Out-Null
+#		[Reflection.Assembly]::LoadWithPartialName("Microsoft.SqlServer.ConnectionInfo") 		| Out-Null
+#		[Reflection.Assembly]::LoadWithPartialName("Microsoft.SqlServer.SmoEnum") 				| Out-Null
 
-#				function Invoke-Sqlcmd3 ($ServerInstance,$Query, $Database)
-				function Invoke-Sqlcmd3 ($ServerInstance,$Query)
-				{
-					[System.Reflection.Assembly]::LoadWithPartialName("Microsoft.SqlServer.SMO") 			| Out-Null
-#					[System.Reflection.Assembly]::LoadWithPartialName("Microsoft.SqlServer.SmoExtended") 	| Out-Null
-#					[Reflection.Assembly]::LoadWithPartialName("Microsoft.SqlServer.ConnectionInfo") 		| Out-Null
-#					[Reflection.Assembly]::LoadWithPartialName("Microsoft.SqlServer.SmoEnum") 				| Out-Null
-
-					$QueryTimeout=600
-				    $conn=new-object System.Data.SqlClient.SQLConnection
-#					$constring = "Server=" + $ServerInstance + ";Trusted_Connection=True;database=" + $Database
-					$constring = "Server=" + $ServerInstance + ";Trusted_Connection=True"
-					$conn.ConnectionString=$constring
-				    $conn.Open()
-					if($conn)
-				    {
-				    	$cmd=new-object System.Data.SqlClient.SqlCommand($Query,$conn)
-				    	$cmd.CommandTimeout=$QueryTimeout
-				    	$ds=New-Object System.Data.DataSet
-				        $ds
-				    	$da=New-Object System.Data.SqlClient.SqlDataAdapter($cmd)
-				    	[void]$da.fill($ds)
-				    	$conn.Close()
-				    	$ds.Tables[0]
-					}
-				}	
-				function SendMail ($report,$emailarray,$attacharray,$from,$subject)
-				{
-				    $smtpServer = "smtphost.carnival.com"
-				    $msg = new-object Net.Mail.MailMessage
-				    $smtp = new-object Net.Mail.SmtpClient($smtpServer)
-				    $msg.From = $from      
-				    foreach ($c in $emailarray)
-				    {  
-				        $msg.To.Add($c)
-				    }  					
-					if ($attacharray -gt '')
-					{
-				    	$attlist = $attacharray.Split(";")										
-						foreach ($c in $attlist)
-					    { 
-					        $att = new-object Net.Mail.Attachment($c)
-					        $msg.Attachments.Add($att)
-					    }
-					}					
-				    $msg.Subject = $subject
-				    $msg.Body = $report
-				    $smtp.Send($msg)
-				}
-
-				#-------------Codeblocks End----------------------------------------
-#>				
-				
-		   Set-Content -Path 'C:\Users\jorgebe\Documents\powershell\WorkFlows\out.txt' (Invoke-Sqlcmd3 'CCLDEVSHRDDB1\DEVSQL2' 'select name from master.dbo.sysdatabases').name
+		$QueryTimeout=600
+		$conn=new-object System.Data.SqlClient.SQLConnection
+#		$constring = "Server=" + $ServerInstance + ";Trusted_Connection=True;database=" + $Database
+		$constring = "Server=" + $ServerInstance + ";Trusted_Connection=True"
+		$conn.ConnectionString=$constring
+		$conn.Open()
+		if($conn)
+		{
+			$cmd=new-object System.Data.SqlClient.SqlCommand($Query,$conn)
+			$cmd.CommandTimeout=$QueryTimeout
+			$ds=New-Object System.Data.DataSet
+#			$ds
+			$da=New-Object System.Data.SqlClient.SqlDataAdapter($cmd)
+			[void]$da.fill($ds)
+			$conn.Close()
+			$ds.Tables[0]
+		}
+		}	
+			
+			
+#			#-------------Codeblocks Start-----------------------------------
+			# Imports $ExecuteSQL Invoke-Sqlcmd3 SendMail 
+#. C:\Users\jorgebe\Documents\powershell\WorkFlows\WorkFlows_CodeBlocks.ps1
+			#-------------Codeblocks End-------------------------------------
+#			Invoke-Sqlcmd3 $using:computer  "select @@servername + '-' + name as name from master.dbo.sysdatabases"
+			$k = ($using:computer).Split("|")
+			$server = $k[0]
+			$db = $k[1]
+			$file = $server.replace("\", '-')
+			$query = 'select * from ' + $db + '.Person.Person'
+			$output = (Invoke-Sqlcmd3 $server $query)
+			#convert system.data.row to string
+			$formatOut = @()
+			for ($i=0; $i -le $output.Length; $i++)
+			{
+			    $formatOut = $formatOut + ($output[$i].ItemArray -join ",")
+			}
+			
+			
+			
+		   	#Set-Content -Path ('C:\Users\jorgebe\Documents\powershell\WorkFlows\' + $file + '-' + $db + '.txt') (Invoke-Sqlcmd3 $server $query)
+			Set-Content -Path ('C:\Users\jorgebe\Documents\powershell\WorkFlows\' + $file + '-' + $db + '.txt') $formatOut
+		}<#
+		InlineScript 
+		{
+. C:\Users\jorgebe\Documents\powershell\WorkFlows\WorkFlows_CodeBlocks.ps1			
 #		   Get-CimInstance –ClassName Win32_OperatingSystem
 		   Get-Process –Name PowerShell*
+		}
+		InlineScript 
+		{
+. C:\Users\jorgebe\Documents\powershell\WorkFlows\WorkFlows_CodeBlocks.ps1			
 #		   Get-CimInstance –ClassName Win32_ComputerSystem
-		   Get-Service –Name s*			
+		   Get-Service –Name s*		
+		}
+		InlineScript 
+		{
+. C:\Users\jorgebe\Documents\powershell\WorkFlows\WorkFlows_CodeBlocks.ps1			
 #			(Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($global:SERVERNAME, $SQL_GetServers, "master"))
 			Set-Content -Path 'C:\Users\jorgebe\Documents\powershell\WorkFlows\out2.txt' (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ('CCLTSTSQL1\TSTSQL3', 'select name from master.dbo.sysdatabases', "master")).name
 
 	  	}	# end of inline script	
+		#>	
+		}	#end of foreach
 	}		# end of parallel
 	#Same as before, no write-host
 	#Write-Host "Completed process of parallel"
 	#this happens after the parallel operations
-	InlineScript { Write-Output "Completed process of parallel"}
-	#After we collected all the outputs of the parallel processes we can use the them
+#	InlineScript { Write-Output "Completed process of parallel"}
+	#After we collected all the outputs of the parallel processes we can use them
 	#In this case we are compressing all the files and emailing them
 	#"this does not work
 	#Dot-sourcing (. <command>) and the invocation operator (& <command>) are not 
 	#supported in a Windows PowerShell Workflow. Wrap this command invocation into 
 	#an inlinescript { } instead.
 	#& cmd /c "compact /C " "C:\Users\jorgebe\Documents\powershell\WorkFlows\AdventureWorks_Sales.csv"
+	<#
 	InlineScript 
 	{ 
 		$attachment = 'C:\Users\jorgebe\Documents\powershell\WorkFlows\AdventureWorks_Sales.csv'
@@ -138,9 +157,9 @@ workflow paralleltest
 . C:\Users\jorgebe\Documents\powershell\WorkFlows\WorkFlows_CodeBlocks.ps1
 		SendMail "Compressed file included" 'jbesada@carnival.com' $attachment 'WorkflowMaster@carnival.com' 'Compressed files'
 		#included for repeated testing
-		& cmd /c 'compact /U ' $attachment
+		#& cmd /c 'compact /U ' $attachment
 	}
-	
-}
+	#>
 
-paralleltest
+
+paralleltest -computers 'CCLDEVSQL4\DEVSQL2|AdventureWorks2008R2','CCLDEVSQL4\DEVSQL2|AdventureWorks2008R2_A','CCLDEVSQL4\DEVSQL2|AdventureWorks2008R2_B','CCLDEVSQL4\DEVSQL2|AdventureWorks2008R2_C'
