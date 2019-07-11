@@ -8,7 +8,7 @@
 #========================================================================
 
 
-workflow paralleltest 
+workflow RunTasks
 {
 	
 	param([string[]]$computers)
@@ -22,12 +22,6 @@ workflow paralleltest
 	You can’t tell! You can run this workflow a number of times 
 	and the data may be returned in a different order each time you run it!
 	#>
-	
-	
-	
-	
-	
-	
 	
 	InlineScript { Write-Output "Started process of parallel"}
 	<#
@@ -48,67 +42,42 @@ workflow paralleltest
 
 	#>
 	
-#	$computers = 'CCLDEVSHRDDB1\DEVSQL2','CCLTSTSQL1\TSTSQL3'	
-#	parallel 
-#	{	
-		
 		foreach –parallel ($computer in $computers)
 		{
 		
 		
 	 	InlineScript 
 		{
+			$WORKFOLDER = 'C:\Users\jorgebe\Documents\powershell\WorkFlows\'			
+			function Invoke-Sqlcmd3 ($ServerInstance, $Database, $Query)
+			{
+				[System.Reflection.Assembly]::LoadWithPartialName("Microsoft.SqlServer.SMO") 	| Out-Null
+				$QueryTimeout=600
+				$conn=new-object System.Data.SqlClient.SQLConnection
+				$constring = "Server=" + $ServerInstance + ";Trusted_Connection=True;database=" + $Database
+				$conn.ConnectionString=$constring
+				$conn.Open()
+				if($conn)
+				{
+					$cmd=new-object System.Data.SqlClient.SqlCommand($Query,$conn)
+					$cmd.CommandTimeout=$QueryTimeout
+					$ds=New-Object System.Data.DataSet
+					$da=New-Object System.Data.SqlClient.SqlDataAdapter($cmd)
+					[void]$da.fill($ds)
+					$conn.Close()
+					$ds.Tables[0]
+				}
+			}		
 			
-		function Invoke-Sqlcmd3 ($ServerInstance,$Query)
-		{
-		[System.Reflection.Assembly]::LoadWithPartialName("Microsoft.SqlServer.SMO") 			| Out-Null
-#		[System.Reflection.Assembly]::LoadWithPartialName("Microsoft.SqlServer.SmoExtended") 	| Out-Null
-#		[Reflection.Assembly]::LoadWithPartialName("Microsoft.SqlServer.ConnectionInfo") 		| Out-Null
-#		[Reflection.Assembly]::LoadWithPartialName("Microsoft.SqlServer.SmoEnum") 				| Out-Null
-
-		$QueryTimeout=600
-		$conn=new-object System.Data.SqlClient.SQLConnection
-#		$constring = "Server=" + $ServerInstance + ";Trusted_Connection=True;database=" + $Database
-		$constring = "Server=" + $ServerInstance + ";Trusted_Connection=True"
-		$conn.ConnectionString=$constring
-		$conn.Open()
-		if($conn)
-		{
-			$cmd=new-object System.Data.SqlClient.SqlCommand($Query,$conn)
-			$cmd.CommandTimeout=$QueryTimeout
-			$ds=New-Object System.Data.DataSet
-#			$ds
-			$da=New-Object System.Data.SqlClient.SqlDataAdapter($cmd)
-			[void]$da.fill($ds)
-			$conn.Close()
-			$ds.Tables[0]
-		}
-		}	
-			
-			
-#			#-------------Codeblocks Start-----------------------------------
-			# Imports $ExecuteSQL Invoke-Sqlcmd3 SendMail 
-#. C:\Users\jorgebe\Documents\powershell\WorkFlows\WorkFlows_CodeBlocks.ps1
-			#-------------Codeblocks End-------------------------------------
-#			Invoke-Sqlcmd3 $using:computer  "select @@servername + '-' + name as name from master.dbo.sysdatabases"
 			$k = ($using:computer).Split("|")
 			$server = $k[0]
 			$db = $k[1]
 			$file = $server.replace("\", '-')
-			$query = 'select * from ' + $db + '.Person.Person'
-			$output = (Invoke-Sqlcmd3 $server $query)
-			#convert system.data.row to string
-			$formatOut = @()
-			for ($i=0; $i -le $output.Length; $i++)
-			{
-			    $formatOut = $formatOut + ($output[$i].ItemArray -join ",")
-			}
-			
-			
-			
-		   	#Set-Content -Path ('C:\Users\jorgebe\Documents\powershell\WorkFlows\' + $file + '-' + $db + '.txt') (Invoke-Sqlcmd3 $server $query)
+			$query = 'select * from Person.Person'
+			(Invoke-Sqlcmd3 $server $db $query) | Export-Csv -Path ($WORKFOLDER + $file + '-' + $db + '.csv') -NoTypeInformation
 			Set-Content -Path ('C:\Users\jorgebe\Documents\powershell\WorkFlows\' + $file + '-' + $db + '.txt') $formatOut
-		}<#
+		}
+		<#
 		InlineScript 
 		{
 . C:\Users\jorgebe\Documents\powershell\WorkFlows\WorkFlows_CodeBlocks.ps1			
@@ -162,4 +131,4 @@ workflow paralleltest
 	#>
 
 
-paralleltest -computers 'CCLDEVSQL4\DEVSQL2|AdventureWorks2008R2','CCLDEVSQL4\DEVSQL2|AdventureWorks2008R2_A','CCLDEVSQL4\DEVSQL2|AdventureWorks2008R2_B','CCLDEVSQL4\DEVSQL2|AdventureWorks2008R2_C'
+RunTasks -computers 'CCLDEVSQL4\DEVSQL2|AdventureWorks2008R2','CCLDEVSQL4\DEVSQL2|AdventureWorks2008R2_A','CCLDEVSQL4\DEVSQL2|AdventureWorks2008R2_B','CCLDEVSQL4\DEVSQL2|AdventureWorks2008R2_C'
