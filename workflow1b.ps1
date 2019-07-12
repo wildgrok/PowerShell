@@ -42,10 +42,8 @@ workflow RunTasks
 
 	#>
 	
-		foreach –parallel ($computer in $computers)
-		{
-		
-		
+	foreach –parallel ($computer in $computers)
+	{				
 	 	InlineScript 
 		{
 			$WORKFOLDER = 'C:\Users\jorgebe\Documents\powershell\WorkFlows\'			
@@ -67,39 +65,31 @@ workflow RunTasks
 					$conn.Close()
 					$ds.Tables[0]
 				}
-			}		
+			}	
 			
-			$k = ($using:computer).Split("|")
-			$server = $k[0]
-			$db = $k[1]
-			$file = $server.replace("\", '-')
+			function GetParams ($indata)
+			{
+				$k = $indata.Split("|")
+				$server = $k[0]
+				$db = $k[1]
+				$file = $server.replace("\", '-')
+				return $server, $db, $file
+			}
+			
+
+			$server, $db, $file = GetParams ($using:computer)
 			$query = 'select * from Person.Person'
 			(Invoke-Sqlcmd3 $server $db $query) | Export-Csv -Path ($WORKFOLDER + $file + '-' + $db + '.csv') -NoTypeInformation
-			Set-Content -Path ('C:\Users\jorgebe\Documents\powershell\WorkFlows\' + $file + '-' + $db + '.txt') $formatOut
-		}
-		<#
-		InlineScript 
+					
+		} 	# end of inlinescript
+		sequence 
 		{
-. C:\Users\jorgebe\Documents\powershell\WorkFlows\WorkFlows_CodeBlocks.ps1			
-#		   Get-CimInstance –ClassName Win32_OperatingSystem
-		   Get-Process –Name PowerShell*
+			InlineScript { Write-Output $using:computer}
 		}
-		InlineScript 
-		{
-. C:\Users\jorgebe\Documents\powershell\WorkFlows\WorkFlows_CodeBlocks.ps1			
-#		   Get-CimInstance –ClassName Win32_ComputerSystem
-		   Get-Service –Name s*		
-		}
-		InlineScript 
-		{
-. C:\Users\jorgebe\Documents\powershell\WorkFlows\WorkFlows_CodeBlocks.ps1			
-#			(Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($global:SERVERNAME, $SQL_GetServers, "master"))
-			Set-Content -Path 'C:\Users\jorgebe\Documents\powershell\WorkFlows\out2.txt' (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ('CCLTSTSQL1\TSTSQL3', 'select name from master.dbo.sysdatabases', "master")).name
-
-	  	}	# end of inline script	
-		#>	
-		}	#end of foreach
-	}		# end of parallel
+		
+	}		# end of foreach
+	
+}			# end workflow
 	#Same as before, no write-host
 	#Write-Host "Completed process of parallel"
 	#this happens after the parallel operations
