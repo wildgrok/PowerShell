@@ -24,7 +24,7 @@ workflow RunTasks
 	and the data may be returned in a different order each time you run it!
 	#>
 	
-	InlineScript { Write-Output "Started process of parallel"}
+	
 	<#
 	You can use the Parallel keyword to create a script block with multiple commands 
 	that will run concurrently. This uses the syntax shown below. 
@@ -45,12 +45,12 @@ workflow RunTasks
 	
 	InlineScript 
 	{ 
-		Write-Output "Task before the parallel process"
+		Write-Output "Task before the parallel process - delete existing csv files"
 		$WORKFOLDER = 'C:\Users\jorgebe\Documents\powershell\WorkFlows\'
 		Remove-Item -Path ($WORKFOLDER + '*.csv')
 	}
 	
-	
+	InlineScript { Write-Output "Started parallel process - saving db data in files"}
 	
 	foreach –parallel ($computer in $computers)
 	{	
@@ -88,7 +88,8 @@ workflow RunTasks
 				return $server, $db, $file
 			}
 			
-			$WORKFOLDER = 'C:\Users\jorgebe\Documents\powershell\WorkFlows\'	
+			$WORKFOLDER = 'C:\Users\jorgebe\Documents\powershell\WorkFlows\'
+			Write-Output $using:computer
 			$server, $db, $file = GetParams ($using:computer)
 			$query = 'select * from Person.Person'
 			$currfile = $WORKFOLDER + $file + '-' + $db + '.csv'
@@ -107,8 +108,7 @@ workflow RunTasks
 				return $server, $db, $file
 			}
 			
-			$WORKFOLDER = 'C:\Users\jorgebe\Documents\powershell\WorkFlows\'
-			Write-Output $using:computer
+			$WORKFOLDER = 'C:\Users\jorgebe\Documents\powershell\WorkFlows\'			
 			$server, $db, $file = GetParams ($using:computer)
 			$currfile = $WORKFOLDER + $file + '-' + $db + '.csv'
 			Write-Output "currfile " $currfile
@@ -120,37 +120,47 @@ workflow RunTasks
 	
 	InlineScript { Write-Output "Completed process of parallel"}
 	
-	
-}			# end workflow
-	#Same as before, no write-host
-	#Write-Host "Completed process of parallel"
-	#this happens after the parallel operations
-#	InlineScript { Write-Output "Completed process of parallel"}
-	#After we collected all the outputs of the parallel processes we can use them
-	#In this case we are compressing all the files and emailing them
-	#"this does not work
-	#Dot-sourcing (. <command>) and the invocation operator (& <command>) are not 
-	#supported in a Windows PowerShell Workflow. Wrap this command invocation into 
-	#an inlinescript { } instead.
-	#& cmd /c "compact /C " "C:\Users\jorgebe\Documents\powershell\WorkFlows\AdventureWorks_Sales.csv"
-	<#
 	InlineScript 
 	{ 
-		$attachment = 'C:\Users\jorgebe\Documents\powershell\WorkFlows\AdventureWorks_Sales.csv'
-		& cmd /c 'compact /C ' $attachment
-		#SendMail ($report,$emailarray,$attacharray,$from,$subject)
-		#No good, as expected
-		#SendMail : The term 'SendMail' is not recognized as the name of a cmdlet, 
-		#function, script file, or operable program. Check the spelling of the name, or 
-		#if a path was included, verify that the path is correct and try again.
-		#SendMail ($report,'jbesada@carnival.com',$attachment,'WorkflowMaster@carnival.com','Compressed files')
-		#this works
-. C:\Users\jorgebe\Documents\powershell\WorkFlows\WorkFlows_CodeBlocks.ps1
-		SendMail "Compressed file included" 'jbesada@carnival.com' $attachment 'WorkflowMaster@carnival.com' 'Compressed files'
-		#included for repeated testing
-		#& cmd /c 'compact /U ' $attachment
-	}
-	#>
+		function SendMail ($report,$emailarray,$attacharray,$from,$subject)
+		{
+			$smtpServer = "smtphost.carnival.com"
+			$msg = new-object Net.Mail.MailMessage
+			$smtp = new-object Net.Mail.SmtpClient($smtpServer)
+			$msg.From = $from      
+			foreach ($c in $emailarray)
+			{  
+				$msg.To.Add($c)
+			}  					
+			if ($attacharray -gt '')
+			{
+				$attlist = $attacharray.Split(";")										
+				foreach ($c in $attlist)
+				{ 
+					$att = new-object Net.Mail.Attachment($c)
+					$msg.Attachments.Add($att)
+				}
+			}					
+				$msg.Subject = $subject
+				$msg.Body = $report
+				$smtp.Send($msg)
+		}	
+		
+		
+		Write-Output "Final tasks workflow - emailing report"
+		$WORKFOLDER = 'C:\Users\jorgebe\Documents\powershell\WorkFlows\'		
+		#get list of produced files
+		$lst = Get-ChildItem -Path $WORKFOLDER -Filter "*.csv"
 
+		$msg = ''
+		foreach ($k in $lst)
+		{
+			$msg = $msg + $k.Name + [char]9 + $k.LastWriteTime + [char]13 + [char]10
+		}
+		SendMail $msg 'jbesada@carnival.com' '' 'WorkFlowProcess@noreply.com' 'Workflow Process Report'			
+	} 	# end of inlinescript 3	
+	
+	
+}			# end workflow
 
 RunTasks -computers 'CCLDEVSQL4\DEVSQL2|AdventureWorks2008R2','CCLDEVSQL4\DEVSQL2|AdventureWorks2008R2_A','CCLDEVSQL4\DEVSQL2|AdventureWorks2008R2_B','CCLDEVSQL4\DEVSQL2|AdventureWorks2008R2_C'
