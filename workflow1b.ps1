@@ -1,6 +1,7 @@
 ﻿#========================================================================
 # Created with: SAPIEN Technologies, Inc., PowerShell Studio 2012 v3.1.35
 # Created on:   4/2/2019 11:06 AM
+# Last modified 7/15/2019
 # Created by:   jorgebe
 # Organization: 
 # Filename: 
@@ -42,11 +43,22 @@ workflow RunTasks
 
 	#>
 	
+	InlineScript 
+	{ 
+		Write-Output "Task before the parallel process"
+		$WORKFOLDER = 'C:\Users\jorgebe\Documents\powershell\WorkFlows\'
+		Remove-Item -Path ($WORKFOLDER + '*.csv')
+	}
+	
+	
+	
 	foreach –parallel ($computer in $computers)
-	{				
-	 	InlineScript 
+	{	
+		sequence
 		{
-			$WORKFOLDER = 'C:\Users\jorgebe\Documents\powershell\WorkFlows\'			
+	 	InlineScript # file generation task
+		{
+					
 			function Invoke-Sqlcmd3 ($ServerInstance, $Database, $Query)
 			{
 				[System.Reflection.Assembly]::LoadWithPartialName("Microsoft.SqlServer.SMO") 	| Out-Null
@@ -76,18 +88,38 @@ workflow RunTasks
 				return $server, $db, $file
 			}
 			
-
+			$WORKFOLDER = 'C:\Users\jorgebe\Documents\powershell\WorkFlows\'	
 			$server, $db, $file = GetParams ($using:computer)
 			$query = 'select * from Person.Person'
-			(Invoke-Sqlcmd3 $server $db $query) | Export-Csv -Path ($WORKFOLDER + $file + '-' + $db + '.csv') -NoTypeInformation
-					
-		} 	# end of inlinescript
-		sequence 
-		{
-			InlineScript { Write-Output $using:computer}
-		}
-		
+			$currfile = $WORKFOLDER + $file + '-' + $db + '.csv'
+			
+			(Invoke-Sqlcmd3 $server $db $query) | Export-Csv -Path ($currfile) -NoTypeInformation 
+		}	#end of inlinescript 1	
+			
+		InlineScript # file compression task
+		{			
+			function GetParams ($indata)
+			{
+				$k = $indata.Split("|")
+				$server = $k[0]
+				$db = $k[1]
+				$file = $server.replace("\", '-')
+				return $server, $db, $file
+			}
+			
+			$WORKFOLDER = 'C:\Users\jorgebe\Documents\powershell\WorkFlows\'
+			Write-Output $using:computer
+			$server, $db, $file = GetParams ($using:computer)
+			$currfile = $WORKFOLDER + $file + '-' + $db + '.csv'
+			Write-Output "currfile " $currfile
+			& cmd /c compact /C $currfile
+								
+		} 	# end of inlinescript 2		
+		}	# end of sequence		
 	}		# end of foreach
+	
+	InlineScript { Write-Output "Completed process of parallel"}
+	
 	
 }			# end workflow
 	#Same as before, no write-host
