@@ -1,7 +1,9 @@
 ﻿#========================================================================
 # Created with: SAPIEN Technologies, Inc., PowerShell Studio 2012 v3.1.35
 # Created on:   4/2/2019 11:06 AM
-# Last modified 7/15/2019
+# Last modified 
+#7/16/2019 added email report
+#7/15/2019
 # Created by:   jorgebe
 # Organization: 
 # Filename: 
@@ -56,95 +58,52 @@ workflow RunTasks
 	{	
 		sequence
 		{
-	 	InlineScript # file generation task
-		{
-					
-			function Invoke-Sqlcmd3 ($ServerInstance, $Database, $Query)
+		 	InlineScript # file generation task
 			{
-				[System.Reflection.Assembly]::LoadWithPartialName("Microsoft.SqlServer.SMO") 	| Out-Null
-				$QueryTimeout=600
-				$conn=new-object System.Data.SqlClient.SQLConnection
-				$constring = "Server=" + $ServerInstance + ";Trusted_Connection=True;database=" + $Database
-				$conn.ConnectionString=$constring
-				$conn.Open()
-				if($conn)
-				{
-					$cmd=new-object System.Data.SqlClient.SqlCommand($Query,$conn)
-					$cmd.CommandTimeout=$QueryTimeout
-					$ds=New-Object System.Data.DataSet
-					$da=New-Object System.Data.SqlClient.SqlDataAdapter($cmd)
-					[void]$da.fill($ds)
-					$conn.Close()
-					$ds.Tables[0]
-				}
-			}	
-			
-			function GetParams ($indata)
-			{
-				$k = $indata.Split("|")
-				$server = $k[0]
-				$db = $k[1]
-				$file = $server.replace("\", '-')
-				return $server, $db, $file
-			}
-			
-			$WORKFOLDER = 'C:\Users\jorgebe\Documents\powershell\WorkFlows\'
-			Write-Output $using:computer
-			$server, $db, $file = GetParams ($using:computer)
-			$query = 'select * from Person.Person'
-			$currfile = $WORKFOLDER + $file + '-' + $db + '.csv'
-			
-			(Invoke-Sqlcmd3 $server $db $query) | Export-Csv -Path ($currfile) -NoTypeInformation 
-		}	#end of inlinescript 1	
-			
-		InlineScript # file compression task
-		{			
-			function GetParams ($indata)
-			{
-				$k = $indata.Split("|")
-				$server = $k[0]
-				$db = $k[1]
-				$file = $server.replace("\", '-')
-				return $server, $db, $file
-			}
-			
-			$WORKFOLDER = 'C:\Users\jorgebe\Documents\powershell\WorkFlows\'			
-			$server, $db, $file = GetParams ($using:computer)
-			$currfile = $WORKFOLDER + $file + '-' + $db + '.csv'
-			Write-Output "currfile " $currfile
-			& cmd /c compact /C $currfile
+#Yes Viginia, we can import functions and codeblocks in WorkFlows
+#In this case we are using Invoke-Sqlcmd3					
+. C:\Users\jorgebe\Documents\powershell\WorkFlows\WorkFlows_CodeBlocks.ps1
 								
-		} 	# end of inlinescript 2		
+				$WORKFOLDER = 'C:\Users\jorgebe\Documents\powershell\WorkFlows\'
+				Write-Output "computer:" $using:computer
+				$server, $db, $file = GetParams ($using:computer)
+				$query = 'select * from Person.Person'
+				$currfile = $WORKFOLDER + $file + '-' + $db + '.csv'
+				
+				(Invoke-Sqlcmd3 $server $db $query) | Export-Csv -Path ($currfile) -NoTypeInformation 
+			}	#end of inlinescript 1	
+			
+			InlineScript # file compression task
+			{
+#Yes Viginia, we can import functions and codeblocks in WorkFlows
+#In this case we are using GetParams					
+. C:\Users\jorgebe\Documents\powershell\WorkFlows\WorkFlows_CodeBlocks.ps1				
+#				function GetParams ($indata)
+#				{
+#					$k = $indata.Split("|")
+#					$server = $k[0]
+#					$db = $k[1]
+#					$file = $server.replace("\", '-')
+#					return $server, $db, $file
+#				}
+				
+				$WORKFOLDER = 'C:\Users\jorgebe\Documents\powershell\WorkFlows\'			
+				$server, $db, $file = GetParams ($using:computer)
+				$currfile = $WORKFOLDER + $file + '-' + $db + '.csv'
+				Write-Output "currfile " $currfile
+				& cmd /c compact /C $currfile
+									
+			} 	# end of inlinescript 2		
 		}	# end of sequence		
 	}		# end of foreach
 	
 	InlineScript { Write-Output "Completed process of parallel"}
 	
 	InlineScript 
-	{ 
-		function SendMail ($report,$emailarray,$attacharray,$from,$subject)
-		{
-			$smtpServer = "smtphost.carnival.com"
-			$msg = new-object Net.Mail.MailMessage
-			$smtp = new-object Net.Mail.SmtpClient($smtpServer)
-			$msg.From = $from      
-			foreach ($c in $emailarray)
-			{  
-				$msg.To.Add($c)
-			}  					
-			if ($attacharray -gt '')
-			{
-				$attlist = $attacharray.Split(";")										
-				foreach ($c in $attlist)
-				{ 
-					$att = new-object Net.Mail.Attachment($c)
-					$msg.Attachments.Add($att)
-				}
-			}					
-				$msg.Subject = $subject
-				$msg.Body = $report
-				$smtp.Send($msg)
-		}	
+	{
+#Yes Viginia, we can import functions and codeblocks in WorkFlows
+#In this case we are using SendMail		
+. C:\Users\jorgebe\Documents\powershell\WorkFlows\WorkFlows_CodeBlocks.ps1
 		
 		
 		Write-Output "Final tasks workflow - emailing report"
