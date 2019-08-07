@@ -6,7 +6,8 @@
 #Called from SQLSMO_WorkFlow.cmd
 #Created 8/1/2019
 #Last modified:
-#8/7/2019 tested restorelogs
+#8/7/2019 tested restoredabase and restorelogs using workflow (but with the jobs inside) ok
+#8/7/2019 tested restorelogs (jobs version)
 #8/2/2019: fixed typos in C:\Users\jorgebe\Documents\powershell\workflows
 #8/2/2019: started changes to workflow parallel (not ready yet)
 
@@ -21,10 +22,10 @@
 
 
 #=========================PROGRAM STARTS===========================================
-#workflow Run-Workflow 
-#{ # start of workflow
-#InlineScript 
-#{ 
+workflow Run-Workflow 
+{ # start of workflow
+InlineScript 
+{ 
 #		param([string[]]$listofservers)
 		
   #needed to import ExecuteSQL, GetBackupInfo, RestoreDatabase, RestoreLogs, GetLatestBackup
@@ -35,10 +36,10 @@
 	$CONCURRENCY = 5
 
 
-"Killing existing jobs . . ."
+#"Killing existing jobs . . ."
 Get-Job | Remove-Job -Force
-"Done."
-" "
+#"Done."
+#" "
 
 
 $cnt = 0
@@ -65,7 +66,7 @@ foreach ($k in $listofservers)
 		{	
 			#test print, to be commented
 			#in teh jobs version it works, does not in workflow
-			$a
+			#$a
 			#this is the workflow version
 				
 			
@@ -117,30 +118,12 @@ foreach ($k in $listofservers)
 }
 Get-Job | Receive-Job #| Out-Null
 
-#} #end of inlinescript
+} #end of inlinescript
 	
-#little demo of the parallel use: executes in 60 seconds instead of 100 seconds	
-#InlineScript 
-#{ 
-#	Write-Output "Started parallel process"	
-#	Get-Date
-#}	
-#
-#parallel
-#{
-#	Start-Sleep -s 60
-#	Start-Sleep -s 30
-#	Start-Sleep -s 10
-#}
-#	
-#InlineScript 
-#{ 
-#	Write-Output "Completed parallel process"	
-#	Get-Date
-#}	
 
-#} # end of workflow	
-#Run-Workflow
+
+} # end of workflow	
+Run-Workflow
 
 #. C:\Users\jorgebe\Documents\powershell\workflows\SQLSMO_Workflow_CodeBlocks.ps1	
 #Set-Location C:\Users\jorgebe\Documents\powershell\workflows

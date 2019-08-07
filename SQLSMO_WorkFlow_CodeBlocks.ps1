@@ -8,6 +8,7 @@
 # Called from SQLSMO_WorkFlow.cmd
 
 # Last modified: 
+#8/7/2019 tested restoredabase and restorelogs using workflow (but with the jobs inside) ok
 #8/7/2019 tested restorelogs
  
 #========================================================================
