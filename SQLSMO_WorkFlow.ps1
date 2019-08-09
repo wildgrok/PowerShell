@@ -13,14 +13,6 @@
 
 
 
-
-
-
-
-
-
-
-
 #=========================PROGRAM STARTS===========================================
 workflow Run-Workflow 
 { # start of workflow
@@ -65,7 +57,7 @@ foreach ($k in $listofservers)
 		if ($running.Count -le $CONCURRENCY -and $ENABLED -eq 'Y') 
 		{	
 			#test print, to be commented
-			#in teh jobs version it works, does not in workflow
+			#in the jobs version it works, does not in workflow
 			#$a
 			#this is the workflow version
 				
