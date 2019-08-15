@@ -1,0 +1,1 @@
+powershell C:\Users\jorgebe\Documents\OneDrive\Briefcase_CCL\PASS2019\Jobs_Sample.ps1 > C:\Users\jorgebe\Documents\OneDrive\Briefcase_CCL\PASS2019\Jobs_Sample.out

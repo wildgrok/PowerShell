@@ -1,0 +1,47 @@
+Killing existing jobs . . .
+Done.
+ 
+
+Id     Name            PSJobTypeName   State         HasMoreData     Location  
+--     ----            -------------   -----         -----------     --------  
+1      Job1            BackgroundJob   Running       True            localhost 
+3      Job3            BackgroundJob   Running       True            localhost 
+5      Job5            BackgroundJob   Running       True            localhost 
+7      Job7            BackgroundJob   Running       True            localhost 
+9      Job9            BackgroundJob   Running       True            localhost 
+1      Job1            BackgroundJob   Completed     True            localhost 
+3      Job3            BackgroundJob   Completed     True            localhost 
+5      Job5            BackgroundJob   Completed     True            localhost 
+7      Job7            BackgroundJob   Completed     True            localhost 
+9      Job9            BackgroundJob   Completed     True            localhost 
+Latest backup from folder
+\\Ccldevsql4\devsql2\SQLBACKUPS\SQLBackupUser\ZZZ_Deleteme_1_backup.bak
+USE MASTER RESTORE DATABASE [ZZZ_Deleteme_1] FROM DISK ='\\Ccldevsql4\devsql2\SQLBACKUPS\SQLBackupUser\ZZZ_Deleteme_1_backup.bak' WITH  MOVE 'ZZZ_Deleteme_1' TO 'E:\DEVSQL2\SQLDATA\ZZZ_Deleteme_1_Data.mdf',  MOVE 'ZZZ_Deleteme_1_log' TO 'F:\DEVSQL2\SQLLOGS\ZZZ_Deleteme_1_Log.ldf',  NOUNLOAD, RECOVERY, STATS = 10, REPLACE;
+
+ALTER AUTHORIZATION ON DATABASE::[ZZZ_Deleteme_1] TO [sa]
+
+Latest backup from folder
+\\Ccldevsql4\devsql2\SQLBACKUPS\SQLBackupUser\ZZZ_Deleteme_1_backup.bak
+USE MASTER RESTORE DATABASE [ZZZ_Deleteme_2] FROM DISK ='\\Ccldevsql4\devsql2\SQLBACKUPS\SQLBackupUser\ZZZ_Deleteme_1_backup.bak' WITH  MOVE 'ZZZ_Deleteme_1' TO 'E:\DEVSQL2\SQLDATA\ZZZ_Deleteme_2_Data.mdf',  MOVE 'ZZZ_Deleteme_1_log' TO 'F:\DEVSQL2\SQLLOGS\ZZZ_Deleteme_2_Log.ldf',  NOUNLOAD, RECOVERY, STATS = 10, REPLACE;
+
+ALTER AUTHORIZATION ON DATABASE::[ZZZ_Deleteme_2] TO [sa]
+
+Latest backup from folder
+\\Ccldevsql4\devsql2\SQLBACKUPS\SQLBackupUser\ZZZ_Deleteme_1_backup.bak
+USE MASTER RESTORE DATABASE [ZZZ_Deleteme_3] FROM DISK ='\\Ccldevsql4\devsql2\SQLBACKUPS\SQLBackupUser\ZZZ_Deleteme_1_backup.bak' WITH  MOVE 'ZZZ_Deleteme_1' TO 'E:\DEVSQL2\SQLDATA\ZZZ_Deleteme_3_Data.mdf',  MOVE 'ZZZ_Deleteme_1_log' TO 'F:\DEVSQL2\SQLLOGS\ZZZ_Deleteme_3_Log.ldf',  NOUNLOAD, RECOVERY, STATS = 10, REPLACE;
+
+ALTER AUTHORIZATION ON DATABASE::[ZZZ_Deleteme_3] TO [sa]
+
+Latest backup from folder
+\\Ccldevsql4\devsql2\SQLBACKUPS\SQLBackupUser\ZZZ_Deleteme_1_backup.bak
+USE MASTER RESTORE DATABASE [ZZZ_Deleteme_4] FROM DISK ='\\Ccldevsql4\devsql2\SQLBACKUPS\SQLBackupUser\ZZZ_Deleteme_1_backup.bak' WITH  MOVE 'ZZZ_Deleteme_1' TO 'E:\DEVSQL2\SQLDATA\ZZZ_Deleteme_4_Data.mdf',  MOVE 'ZZZ_Deleteme_1_log' TO 'F:\DEVSQL2\SQLLOGS\ZZZ_Deleteme_4_Log.ldf',  NOUNLOAD, NORECOVERY, STATS = 10, REPLACE;
+
+DECLARE @kill varchar(8000) = ''; SELECT @kill = @kill + 'kill '  + CONVERT(varchar(5), spid) + ';' FROM master..sysprocesses WHERE dbid = db_id('ZZZ_Deleteme_4')  EXEC(@kill); 
+Latest backup from folder
+\\Ccldevsql4\devsql2\SQLBACKUPS\SQLBackupUser\ZZZ_Deleteme_1_backup.bak
+USE MASTER RESTORE DATABASE [ZZZ_Deleteme_5] FROM DISK ='\\Ccldevsql4\devsql2\SQLBACKUPS\SQLBackupUser\ZZZ_Deleteme_1_backup.bak' WITH  MOVE 'ZZZ_Deleteme_1' TO 'E:\DEVSQL2\SQLDATA\ZZZ_Deleteme_5_Data.mdf',  MOVE 'ZZZ_Deleteme_1_log' TO 'F:\DEVSQL2\SQLLOGS\ZZZ_Deleteme_5_Log.ldf',  NOUNLOAD, RECOVERY, STATS = 10, REPLACE;
+
+ALTER AUTHORIZATION ON DATABASE::[ZZZ_Deleteme_5] TO [sa]
+
+
+

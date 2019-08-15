@@ -1,0 +1,11 @@
+Killing existing jobs . . .
+Done.
+ 
+
+Id     Name            PSJobTypeName   State         HasMoreData     Location  
+--     ----            -------------   -----         -----------     --------  
+1      Job1            BackgroundJob   Running       True            localhost 
+1      Job1            BackgroundJob   Completed     True            localhost 
+ RESTORE LOG [ZZZ_Deleteme_4] FROM  DISK = '\\Ccldevsql4\devsql2\SQLBACKUPS\SQLBackupUser\ZZZ_Deleteme_1_backup_1.trn' WITH FILE = 1, NORECOVERY,  NOUNLOAD; RESTORE LOG [ZZZ_Deleteme_4] FROM  DISK = '\\Ccldevsql4\devsql2\SQLBACKUPS\SQLBackupUser\ZZZ_Deleteme_1_backup_2.trn' WITH FILE = 1, NORECOVERY,  NOUNLOAD; RESTORE DATABASE [ZZZ_Deleteme_4] WITH RECOVERY;
+
+
