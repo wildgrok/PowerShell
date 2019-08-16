@@ -1,0 +1,44 @@
+Task before the parallel process - delete existing csv files
+Started parallel process - saving db data in files
+computer:CCLDEVSQL4\DEVSQL2|AdventureWorks2008R2_C
+computer:CCLDEVSQL4\DEVSQL2|AdventureWorks2008R2_B
+computer:CCLDEVSQL4\DEVSQL2|AdventureWorks2008R2_A
+computer:CCLDEVSQL4\DEVSQL2|AdventureWorks2008R2
+currfile:C:\Users\jorgebe\Documents\OneDrive\Briefcase_CCL\PASS2019\CCLDEVSQL4-DEVSQL2-AdventureWorks2008R2_C.csv
+
+ Compressing files in C:\Users\jorgebe\Documents\OneDrive\Briefcase_CCL\PASS2019\
+
+currfile:C:\Users\jorgebe\Documents\OneDrive\Briefcase_CCL\PASS2019\CCLDEVSQL4-DEVSQL2-AdventureWorks2008R2_B.csv
+
+ Compressing files in C:\Users\jorgebe\Documents\OneDrive\Briefcase_CCL\PASS2019\
+
+CCLDEVSQL4-DEVSQL2-AdventureWorks2008R2_C.csv  13884824 :   5206016 = 2.7 to 1 [OK]
+
+1 files within 1 directories were compressed.
+13,884,824 total bytes of data are stored in 5,206,016 bytes.
+The compression ratio is 2.7 to 1.
+CCLDEVSQL4-DEVSQL2-AdventureWorks2008R2_B.csv  13884824 :   5206016 = 2.7 to 1 [OK]
+
+1 files within 1 directories were compressed.
+13,884,824 total bytes of data are stored in 5,206,016 bytes.
+The compression ratio is 2.7 to 1.
+currfile:C:\Users\jorgebe\Documents\OneDrive\Briefcase_CCL\PASS2019\CCLDEVSQL4-DEVSQL2-AdventureWorks2008R2_A.csv
+
+ Compressing files in C:\Users\jorgebe\Documents\OneDrive\Briefcase_CCL\PASS2019\
+
+CCLDEVSQL4-DEVSQL2-AdventureWorks2008R2_A.csv  13884824 :   5206016 = 2.7 to 1 [OK]
+
+1 files within 1 directories were compressed.
+13,884,824 total bytes of data are stored in 5,206,016 bytes.
+The compression ratio is 2.7 to 1.
+currfile:C:\Users\jorgebe\Documents\OneDrive\Briefcase_CCL\PASS2019\CCLDEVSQL4-DEVSQL2-AdventureWorks2008R2.csv
+
+ Compressing files in C:\Users\jorgebe\Documents\OneDrive\Briefcase_CCL\PASS2019\
+
+CCLDEVSQL4-DEVSQL2-AdventureWorks2008R2.csv  13884824 :   5206016 = 2.7 to 1 [OK]
+
+1 files within 1 directories were compressed.
+13,884,824 total bytes of data are stored in 5,206,016 bytes.
+The compression ratio is 2.7 to 1.
+End of parallel process
+Final tasks workflow - emailing report
