@@ -1,4 +1,4 @@
-#Real_WorkFlow.ps1 - uses same Jobs_CodeBlocks.ps1
+#Real_WorkFlow.ps1 - uses Real_Workflow_CodeBlocks.ps1
 
 workflow Run-Workflow 
 { # start of workflow
@@ -10,30 +10,24 @@ workflow Run-Workflow
 
     foreach -parallel ($k in $listofservers)
     {
-      InlineScript
+       
+      sequence
       {
-        . C:\Users\jorgebe\Documents\OneDrive\Briefcase_CCL\PASS2019\Jobs_CodeBlocks.ps1
+        InlineScript
+        {
+          "Executing first sequence items ..."
+          . C:\Users\jorgebe\Documents\OneDrive\Briefcase_CCL\PASS2019\Real_Workflow_CodeBlocks.ps1
           $a = ($using:k).Split('|')
-          $SOURCESERVER = $a[0]
-          $BACKUPFILE = $a[1]
-          $SOURCEDB = $a[2]
-          $DESTSERVER = $a[3]
-          $DATAFOLDER = $a[4]
-          $LOGFOLDER = $a[5]
-          $DESTDB = $a[6]
-          $ACTIONS = $a[7]
-          $ENABLED = $a[8]         
-		
-          $restore_options = @{}
-				
-          if ($ENABLED -eq 'Y') 
-          {	
+          $SOURCESERVER,$BACKUPFILE,$SOURCEDB,$DESTSERVER = $a[0],$a[1],$a[2],$a[3]
+          $DATAFOLDER,$LOGFOLDER,$DESTDB,$ACTIONS         = $a[4],$a[5],$a[6],$a[7]      	
+          $restore_options = @{}				
+          	
             if ($ACTIONS -eq 'RESTORE_DATABASE_FULL_WITH_RECOVERY')
             {		
               $restore_options['restore_type'] = 'DATABASE'
               $restore_options['recovery'] = 'RECOVERY'
               $restore_options['replace'] = $True            
-              $null = Invoke-Command -ScriptBlock $RestoreDatabase -ArgumentList ($DESTSERVER,$BACKUPFILE, $SOURCEDB, $DESTDB, $LOGFOLDER, $DATAFOLDER, $restore_options)				
+              $null = Invoke-Command -ScriptBlock $RestoreDatabase -ArgumentList ($DESTSERVER,$BACKUPFILE, $SOURCEDB, $DESTDB, $LOGFOLDER, $DATAFOLDER, $restore_options)				              
             }
 			
             if ($ACTIONS -eq 'RESTORE_DATABASE_FULL_WITH_NORECOVERY')
@@ -59,8 +53,14 @@ workflow Run-Workflow
               $restore_options['replace'] = $True
               $null = Invoke-Command -ScriptBlock $RestoreLogs -ArgumentList ($DESTSERVER,$BACKUPFILE, $SOURCEDB, $DESTDB, $restore_options) 					
             }			
-          }	        
-      }   # end of inlinescript
+                                       	        
+        } # end of inlinescript 1
+        
+        InlineScript
+        {
+          "Executing second sequence items ..." 
+        } # end of inlinescript 2
+      }   # end of sequence 
     }     # end of foreach
     
     InlineScript
@@ -70,6 +70,6 @@ workflow Run-Workflow
 }         # end of workflow	
 
 Set-Location C:\Users\jorgebe\Documents\OneDrive\Briefcase_CCL\PASS2019
-$list = Get-Content -Path 'DBLIST_ACTIONS.TXT'
+$list = (Get-Content -Path 'DBLIST_ACTIONS.TXT' | where { $_.Contains("|Y") })
 Run-Workflow -listofservers ($list)
 
