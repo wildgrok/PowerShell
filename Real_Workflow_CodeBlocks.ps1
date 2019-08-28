@@ -265,8 +265,7 @@ $RestoreLogs =
     }	
     if ($restore_options['recovery'] -eq 'RECOVERY')
     {
-      $s = $s + ' RESTORE DATABASE [' + $dbname2 + '] WITH RECOVERY;'
-			
+      $s = $s + ' RESTORE DATABASE [' + $dbname2 + '] WITH RECOVERY;'			
     }
     Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($server, $s, "master")
     return $s
