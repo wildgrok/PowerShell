@@ -2,8 +2,8 @@
 # Created with: SAPIEN Technologies, Inc., PowerShell Studio 2012 v3.1.35
 # Created on:   3/11/2019 10:57 AM
 # Created by:   jorgebe
-#Last updated: 3/13/2019
-# "DEV" version in desktop
+#Last updated: 8/30/2019
+# PROD version in \\ccldevshrddb1\e$\POWERSHELL
 # Organization: 
 # Filename: Check_All_Ships.ps1    
 #========================================================================
@@ -14,12 +14,14 @@ $SERVERLIST = $WORKFOLDER + '\SHIPSLIST.TXT'
 $CONCURRENT = 20
 $LOGFILE 	= $WORKFOLDER + '\ping_status_all.html'
 $WEBPAGE = 'C:\INETPUB\WWWROOT\SQLDBA\ping_status_all.html'
+$global:S = ''
 #=============================================================
 
 
 #===============SCRIPT BLOCKS=================================
 $CheckPing = 
 {
+  #param ($server, $outfile, $global:S)
   param ($server)
   $v = (ping $server -n 1)
   #	Start-Sleep 5
@@ -28,7 +30,7 @@ $CheckPing =
     if ($k.StartsWith("Reply"))
     { break }
     else
-    { if ($k.StartsWith("Request timed out")) { return "" }	}
+    { if ($k.StartsWith("Request timed out")) { return ""  }	}
   }
   $l = $k.Replace('<', '=')
   $lst = $l.split('=')[2]
@@ -39,15 +41,19 @@ $CheckPing =
     $p2 = [int]$p
     if ($p -gt "")  
     {
-    $s = $server + ',' + $p2.ToString()
-    #		$s = $server + [char]9 + $p2.ToString()
+      #$s = $server , $p2
+      $s = $server + '|' + $p2.ToString()
+      #		$s = $server + [char]9 + $p2.ToString()
     }
     else
     {
-    $s = $server + ',0'
-    #		$s = $server + [char]9  + '0'
+      #$s = $server, 0
+      $s = $server + '|0'
+      #		$s = $server + [char]9  + '0'
     }
-  $s		
+    #Add-Content -Path $outfile $s
+    #$global:S = $global:S + $s + [char]13	
+    return $s	
 }
 
 
@@ -77,7 +83,8 @@ cls
 $d1 = Get-Date
 $d1
 " "
-Set-Content -Path ($WORKFOLDER + '\CheckPing.out') 'Server,Ping'
+$outfile = $WORKFOLDER + '\CheckPing.out'
+#Set-Content -Path $outfile $False
 
 
 "Killing existing jobs . . ."
@@ -92,11 +99,12 @@ foreach ($x in $slist)
   if ($x.Trim() -gt '' )
   {
     $msg = "Processing " + $x
-      $msg
+    #      $msg
       $running = @(Get-Job | Where-Object { $_.State -eq 'Running' })
     if ($running.Count -le $CONCURRENT) 
     {
-      $null = (Start-Job -Name 'CheckPing' -ScriptBlock $CheckPing -ArgumentList ($x))			
+      #$null = (Start-Job -Name 'CheckPing' -ScriptBlock $CheckPing -ArgumentList ($x, $outfile, $global:S))	
+      $null = (Start-Job -Name 'CheckPing' -ScriptBlock $CheckPing -ArgumentList ($x))		
     }
     else
     { 
@@ -107,40 +115,46 @@ foreach ($x in $slist)
   }
 }
 
-Start-Sleep 5
-Add-Content -Path ($WORKFOLDER + '\CheckPing.out') ( Get-Job -Name 'CheckPing'  | Receive-Job )	
-Add-Content -Path ($WORKFOLDER + '\CheckPing.out') ''
-Start-Sleep 5
+$global:S = (Get-Job -Name 'CheckPing'  | Receive-Job )
 
-#(Get-Job | Receive-Job) | out-null
+#"Killing existing jobs again. . ."
+#Get-Job | Remove-Job -Force
+#"Done."
+#" "
+
+
+Start-Sleep 5
+Add-Content -Path $outfile $global:S
+#Add-Content -Path ($WORKFOLDER + '\CheckPing.out') ( Get-Job -Name 'CheckPing'  | Receive-Job )	
+#Add-Content -Path ($WORKFOLDER + '\CheckPing.out') ''
+#Start-Sleep 10
+
+
 #-----------
+#Start-Sleep 60
 $date = (Get-Date).ToString()
 
-#$r = Get-Content -Path ($WORKFOLDER + '\CheckPing.out')
-#Get-Content -Delimiter ',' -Path ($WORKFOLDER + '\CheckPing.out') | Sort-Object -InputObject 'Ping'
-#$r = Import-Csv -Path ($WORKFOLDER + '\CheckPing.out') | Sort-Object Ping  #| Select-Object $_.Server, $_.Ping
-#$WORKFOLDER = '\\ccldevshrddb1\e$\POWERSHELL'
-$r = Import-Csv -Path ($WORKFOLDER + '\CheckPing.out') | Sort-Object Ping
-$r
-#$m = $r | Sort-Object -InputObject Ping
-#$m
-foreach($k in $r)
-{
-  $k.Server
-  $k.Ping
-}
-$r['Ping'] = [int]$r['Ping']
-$r['Ping']
-$header = 'Ping of all ships XXSQL3, XXSQL4, XXSQL5, XXSQL6 - ' + $date
+#$outfile = '\\ccldevshrddb1\e$\POWERSHELL\CheckPing.out'
+#$r = Import-Csv -Path $outfile  -Delimiter '|' #| Sort-Object Ping
+
+#$ErrorActionPreference = "silentlycontinue"
+$csv = Import-Csv -Header "Server", "Ping"  -delimiter '|' $outfile
+$csv | % { $_.Ping = [int]$_.Ping }
+$r = ($csv | Sort-Object Ping)
+
+
+$header = 'Ping of all ships XXSQL3 to XXSQL6 - ' + $date + ' - 0 means no response'
 $webpage1 = MakeHTML $r $header
 
 Set-Content $WEBPAGE $webpage1
 #-----------
 
-"Process ended in:" 
+
 $d2 = Get-Date
 $diff = $d2 - $d1
+"Process ended: "
 $diff
 
+Set-Content -Path $outfile ''
 
 
