@@ -92,7 +92,6 @@ Get-Job | Remove-Job -Force
 "Done."
 " "
 
-
 $slist = Get-Content -Path $SERVERLIST
 foreach ($x in $slist)
 {
@@ -103,41 +102,21 @@ foreach ($x in $slist)
       $running = @(Get-Job | Where-Object { $_.State -eq 'Running' })
     if ($running.Count -le $CONCURRENT) 
     {
-      #$null = (Start-Job -Name 'CheckPing' -ScriptBlock $CheckPing -ArgumentList ($x, $outfile, $global:S))	
       $null = (Start-Job -Name 'CheckPing' -ScriptBlock $CheckPing -ArgumentList ($x))		
     }
     else
     { 
       $running | Wait-Job
     }
-    #Start-Sleep 5
-    #Add-Content -Path ($WORKFOLDER + '\CheckPing.out') ( Get-Job -Name 'CheckPing'  | Receive-Job )	
   }
 }
-
+Start-Sleep 60 #IMPORTANT MAGIC HERE: needed to get the last items of the list
 $global:S = (Get-Job -Name 'CheckPing'  | Receive-Job )
 
-#"Killing existing jobs again. . ."
-#Get-Job | Remove-Job -Force
-#"Done."
-#" "
 
 
-Start-Sleep 5
 Add-Content -Path $outfile $global:S
-#Add-Content -Path ($WORKFOLDER + '\CheckPing.out') ( Get-Job -Name 'CheckPing'  | Receive-Job )	
-#Add-Content -Path ($WORKFOLDER + '\CheckPing.out') ''
-#Start-Sleep 10
-
-
-#-----------
-#Start-Sleep 60
 $date = (Get-Date).ToString()
-
-#$outfile = '\\ccldevshrddb1\e$\POWERSHELL\CheckPing.out'
-#$r = Import-Csv -Path $outfile  -Delimiter '|' #| Sort-Object Ping
-
-#$ErrorActionPreference = "silentlycontinue"
 $csv = Import-Csv -Header "Server", "Ping"  -delimiter '|' $outfile
 $csv | % { $_.Ping = [int]$_.Ping }
 $r = ($csv | Sort-Object Ping)
