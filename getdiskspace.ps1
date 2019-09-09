@@ -1,9 +1,28 @@
-#getdiskspace_WIP.ps1
-#version in C:\Users\Documents\powershell\DISKSPACE
+#getdiskspace.ps1
+#version in \\CCLDEVSHRDDB1\e$\POWERSHELL (from getdiskpace_WIP.ps1)
 #last modified:
-#10/2/2018 added dead servers message
+#9/9/2019: removed fake workflow, did fix in PERCENTFREE, PERCENTEFREE_CD
+#9/5/2019: commented all references to deadservers, tested workflow fake
+#7/23/2019: changed webserver to \\ccldevshrddb1\c$\Inetpub\wwwroot\sqldba
+#7/1/2019: fixed duplicate lines for CORPUATSQL1 
+#6/26/2019: fixed query in updateserverlist, changed serverlist
+#4/2/2019: installed it here \\CCLDEVSHRDDB1\e$\POWERSHELL, ccldevsql1 missing drives
+#10/2/2018: added dead servers message
 #10/1/2018: fixed issues, installed in production ccldevsql1
-
+#9/27/2018: added detection of missing drives compared with previous run
+#6/21/2018: added description to report server|drive|disksize|diskfree|freepercent
+#1/29/2018: added join to SERVERS_LIVE_TODAY new table with servers responding to ping
+#7/25/2017: added message notification of server with connection issues (look for $CONNECTERROR)NOT READY YET
+#3/17/2017: added insert to storage table
+#3/14/2017: added email of full diskspace page
+#6/8/2016:  changed to use server list from Master Application List view VW_SERVERS
+#9/25/2015: changed disk sizes to GB
+#7/27/2015: changed display of lowreport lines like "CCLTSTECOSQL1 C: free percent: 0"
+#5/26/2015: tested creation of history pages
+#5/22/2015: started to work on changes requested 
+#5/19/2015: had to change function GetPreviousFileName
+#5/18/2015: installed in ccldevsql1, added deletion of older reports
+#5/15/2015: added comparison with previous runs
 
 #README 
 #sends email with servers and drives with lowspace
@@ -14,21 +33,28 @@
 #Generates  file servers_list3.dat with processed servers
 
 
+#workflow Run-Workflow 
+#{
+#InlineScript 
+#{
+        
+
 $PERCENTFREE    = 10
 $PERCENTFREE_CD = 5
 $RETENTION = 15
-$global:WORKFOLDER 	=	'C:\Users\Documents\powershell\DISKSPACE'
-$WEBFOLDER 			= 	'\\webserver\c$\Inetpub\wwwroot\sqldba'
+$global:WORKFOLDER 	=	'e:\POWERSHELL'
+$WEBFOLDER 			= 	'\\ccldevshrddb1\c$\Inetpub\wwwroot\sqldba'
+$WEBPAGE			= 'http://ccldevshrddb1/sqldba/check_space_new.htm'
 $SERVERLIST     	= $global:WORKFOLDER + '\servers_list3.dat'
-#$EMAILTOLIST 		= 'myemail@company.com'
-$EMAILTOLIST 		= 'DL-SQLDBAS@company.com'
+$EMAILTOLIST 		= 'jbesada@carnival.com'
+#$EMAILTOLIST 		= 'DL-SQLDBAS@carnival.com'
 $FROM           	= "DiskSpaceCheck@noreply.com"
 $SUBJECT        	= "Test Version - Servers Report"
 $LOGMESSAGE     	= ""
 $LOGFILE 	    	= $WEBFOLDER + '\check_space_new.htm'
 $LOWSPACEFILE   	= $global:WORKFOLDER + '\lowspace_report.txt'
 $STORAGE_DATABASE	= 'PerformanceStore_Reports'
-$STORAGE_SERVER		= 'STORAGESERVER'
+$STORAGE_SERVER		= 'CCLDEVSHRDDB1\DEVSQL2'
 
 
 function ListDrives($Servername)
@@ -38,25 +64,22 @@ function ListDrives($Servername)
         get-wmiobject -computername $Servername win32_logicaldisk `
         | select-object systemname, deviceID, Size, Freespace, DriveType `
     }
-    
-    #$r = $m.GetEnumerator() | sort -Property Machine
 }
-
+#CCLDCESHRDSQL1
+#ListDrives("CCLDCESHRDSQL1")
 
 function ProcessServers($Serverlist)
 {
 <#
-	Returns 5 lists (every list item ends in a newline)
+	Returns 4 lists (every list item ends in a newline)
 	$Prc['message']         -> list of items with lowspace
     $Prc['fullreport']      -> all items
     $Prc['links']           -> list of links of items with lowspace
     $Prc['disksreport']   -> list of disk drives lost or gained
-    $Prc['deadservers']   -> dead servers today
 #>
 	$Prc = @{}
     $outmessage = ""
     $fullreport = ""
-    $deadservers = ""
     $disksreport = ""
     $links      = ""
     $drivesmessage = ""
@@ -66,15 +89,7 @@ function ProcessServers($Serverlist)
     foreach ($z in $Computers) 
     {
         if ($z -gt "" -and $z[0] -ne "#")
-        {
-            Write-Host "processing " $z
-            if ($z.Contains("DEAD TODAY"))
-            {
-                $deadservers = $deadservers + $z + [char]10
-            }
-            
-            
-            
+        {         
             $fullreport = $fullreport + "Server : " + $z + [char]10
 			$erroractionpreference = "SilentlyContinue"
             $q = ListDrives($z)
@@ -88,25 +103,18 @@ function ProcessServers($Serverlist)
                     $percent = [math]::round($percent, 0)
 					$ksize = [math]::round($k.size/1000000000) 
 					$kfreespace = [math]::round($k.freespace/1000000000)
-					
-#                    $j = $k.systemname + "|" + $k.deviceid + "|" + ($k.size/1000000000) + "|" + ($k.freespace/1000000000) + "|" + $percent
 					$j = $k.systemname + "|" + $k.deviceid + "|" + $ksize + "|" + $kfreespace + "|" + $percent
 #------------------------------------------------------------------------------
 					$insline = $j.Replace('|', "','")
 					$sqlinsert = "INSERT INTO " + $STORAGE_DATABASE + ".[dbo].[DISKSPACE_HISTORY]([COMPUTER],[DRIVE],[DISKSIZE],[DISKFREE],[FREEPERCENT]) "
 					$sqlinsert = $sqlinsert + "VALUES('" + $insline + "')"
-#					write-host $sqlinsert
 					$w = Invoke-Sqlcmd3 $STORAGE_SERVER $sqlinsert
 #------------------------------------------------------------------------------					
 					
-					if ($k.deviceid -eq 'C:' -or $k.deviceid -eq 'D:')
-					{
-						$PERCENTFREE = $PERCENTFREE_CD
-					}
-					
+#					if ($k.deviceid -eq 'C:' -or $k.deviceid -eq 'D:')
+#					{ $PERCENTFREE = $PERCENTFREE_CD }					
                     if ($percent -lt $PERCENTFREE)
                     {   
-                        Write-Host 'lowspace ' $j
                         $outmessage = $outmessage + $j + [char]10
                         $p = $k.deviceid -replace(":", "$")
                         $links = $links + '\\' + $z + '\' + $p + [char]10
@@ -114,8 +122,7 @@ function ProcessServers($Serverlist)
                     #Section for whole report-------------------------------
                     $fullreport = $fullreport + $j + [char]10
                     #Section for missing drives report----------------------------------------
-                    $disksreport = $disksreport + $k.systemname + '|' + $k.deviceid + [char]10
-#                    $disksreport.Add($k.systemname + '|' + $k.deviceid)
+                    $disksreport = $disksreport + $k.systemname + '|' + $k.deviceid + [char]10       
                 }
             }     
         }
@@ -124,9 +131,7 @@ function ProcessServers($Serverlist)
     $Prc['message']         = $outmessage
     $Prc['fullreport']      = $fullreport
     $Prc['links']           = $links
-    $Prc['disksreport']     = $disksreport
-    $Prc['deadservers']     = $deadservers
-    
+    $Prc['disksreport']     = $disksreport  
     return $Prc 
 }
 
@@ -143,18 +148,13 @@ function SendMail ($report,$emailarray,$attacharray,$from,$subject)
     $msg.From = $from      
     foreach ($c in $emailarray)
     { 
-        #write-host($c) 
         $msg.To.Add($c)
-    }  
-	
+    }  	
 	if ($attacharray -gt '')
 	{
-    	$attlist = $attacharray.Split(";")
-	
-	
+    	$attlist = $attacharray.Split(";")	
 			foreach ($c in $attlist)
 	    { 
-	        #write-host($c) 
 	        $att = new-object Net.Mail.Attachment($c)
 	        $msg.Attachments.Add($att)
 	    }
@@ -180,58 +180,52 @@ function MakeHTML($message, $header="")
     return $OUTARRAY
 }
 
-function SaveDay($record)
-{
-#	$dt = get-date -format yyyyMMddHHmmss
-	$dt = (get-date -format yyyyMMdd) + '.dat'
-	Set-Content ($global:WORKFOLDER + '\' + 'drives_issue_' + $dt) $record
-
-}
+#function SaveDay($record)
+#{
+#
+#	$dt = (get-date -format yyyyMMdd) + '.dat'
+#	Set-Content ($global:WORKFOLDER + '\' + 'drives_issue_' + $dt) $record
+#}
 
 
 
 #Fixed: the previous version commented above failed in CCLDEVSQL1
 #Purpose: get latest .dat file with this form YYYYMMDD.dat in the workfolder
 #this one works
-function GetPreviousFileName($fldr, $ext='.dat')
-{
-	$list = @()
-	$z = dir $fldr -Filter 20*$ext
-	foreach ($x in $z)
-	{
-		$list += $fldr + '\' + $x.Name
-	}	
-	return $list[0]
-}
+#function GetPreviousFileName($fldr, $ext='.dat')
+#{
+#	$list = @()
+#	$z = dir $fldr -Filter 20*$ext
+#	foreach ($x in $z)
+#	{
+#		$list += $fldr + '\' + $x.Name
+#	}	
+#	return $list[0]
+#}
 
 
-
-
-function DeleteOlderFiles($url, $ext, $days)
-{
-	$d = Get-Date
-	$a = @{}
-	$files = Get-ChildItem -Filter $ext $url
-	if ($files.Count -gt 0)
-	{
-      foreach ($f in $files)
-      {
-		write-host  'Checking file ' $f.Name 'dated '  $f.LastWriteTime 
-		if (($d - $f.LastWriteTime).Days -gt $days)
-		{
-			write-host  'Deleting file ' $f.Name 'dated '  $f.LastWriteTime
-	 		Remove-Item  $url\$f -Force
-		}
-		else
-		{
-			write-host  'Keeping file ' $f.Name 'dated '  $f.LastWriteTime
-			$a[$f.Name] = $f.LastWriteTime			
-		}
-    }	
-  }
-  $b = $a.GetEnumerator() | Sort-Object 'Value' -Descending
-  return $b
-}
+#function DeleteOlderFiles($url, $ext, $days)
+#{
+#	$d = Get-Date
+#	$a = @{}
+#	$files = Get-ChildItem -Filter $ext $url
+#	if ($files.Count -gt 0)
+#	{
+#      foreach ($f in $files)
+#      {
+#		if (($d - $f.LastWriteTime).Days -gt $days)
+#		{
+#	 		Remove-Item  $url\$f -Force
+#		}
+#		else
+#		{
+#			$a[$f.Name] = $f.LastWriteTime			
+#		}
+#    }	
+#  }
+#  $b = $a.GetEnumerator() | Sort-Object 'Value' -Descending
+#  return $b
+#}
 
 #$global:WORKFOLDER = 	'c:\Users\jorgebe\Documents\powershell'
 #$m = DeleteOlderFiles $global:WORKFOLDER '2015????.dat' 3
@@ -260,33 +254,25 @@ function Invoke-Sqlcmd3
 	}
 }
 
+#fixed query adding is null
 function UpdateServerList($slist)
 {
 	Set-Content $slist $Null
-
-#	$r = Invoke-Sqlcmd3 'ccluatsql1\uatsql3' 'select Machine from Master_Application_List.dbo.VW_SERVERS'
-    $s = "select Machine from Master_Application_List.dbo.SERVERS_LIVE_TODAY order by Machine"
-
-	$m = Invoke-Sqlcmd3 'ccluatsql1\uatsql3' $s
+    $s = "select Machine from Master_Application_List.dbo.SERVERS_LIVE_TODAY "
+	$s = $s + " where status is null order by Machine"
+	$m = Invoke-Sqlcmd3 $STORAGE_SERVER $s
     $r = $m.GetEnumerator() | sort -Property Machine
-	write-host $r.Machine
 	if ($r.Count -gt 0)
 	{
-		write-host "count:"
-		write-host $r.Count		
 		foreach ($x in $r)
 		{ Add-Content $slist $x.Machine}
 	}
-	else{ write-host "No records" }
 }
 
 
 #-----------Program Starts Here------------------------------
 
 Set-Location $global:WORKFOLDER
-
-#Deleting older file reports
-$m = DeleteOlderFiles $global:WORKFOLDER '20??????.dat' $RETENTION
 
 #updating server list file from Master_Application_List.dbo.SERVERS_LIVE_TODAY
 UpdateServerList $SERVERLIST
@@ -301,58 +287,21 @@ UpdateServerList $SERVERLIST
 #$r['fullreport']       = $fullreport
 #$r['links']            = $links
 #$r['disksreport']      = $disksreport
-#$r['deadservers']      = $deadservers
 #first item is message about missing drives
 #the second item is the full list of drives
 #the third item is the list of links for lowspace drives
 #fourth is list of missing or added drives
-#fifth is list of dead servers today
+
 
 $r = ProcessServers $SERVERLIST
-
-#Save to temp file values just read for disksreport
-#    Set-Content ($global:WORKFOLDER + '\' + 'tmp_full_report.dat') $disksreport | sort
-Set-Content ($global:WORKFOLDER + '\' + 'tmp_full_report.dat') $r['disksreport'] | sort
-$disksreport = $null
-    
-    
-#We read the previous disks report run from file
-$yesterdaydata = Get-Content ($global:WORKFOLDER + '\' + 'today_full_report.dat')
-$todaydata = Get-Content ($global:WORKFOLDER + '\' + 'tmp_full_report.dat')
-
-#Now we compare with current run     
-$cmp = Compare-Object -ReferenceObject $todaydata -DifferenceObject $yesterdaydata
-
+$disksreport = ''        
 $drivesmessage = ''
-if ($cmp)
-{
-    $drivesmessage = $drivesmessage + "There are missing or added drives" + [char]10
-    $drv = ''
-    foreach ($x in $cmp)
-    {
-        $drv = $drv + $x + [char]10 
-    }
-    $drivesmessage = $drivesmessage + $drv
-    SaveDay $drivesmessage
-
-}
-
-   
-#Update disks report with current run
-Set-Content ($global:WORKFOLDER + '\' + 'today_full_report.dat') $todaydata | sort
-    
-
 #==========================================================
 
 $LOGMESSAGE0 = 'Process started' + [char]10 + (get-date) + [char]10
-if ($drivesmessage -gt '')
-{
-    $LOGMESSAGE0 = $LOGMESSAGE0 + $drivesmessage + [char]10
-}
-
 $LOGMESSAGE1 = '---Drives with lowspace - Start ---' + [char]10 + [char]10
-#if ($r['message'].Trim() -gt '')
-#{  
+if ($r['message'].Trim() -gt '')
+{  
     $array = $r['message'].Split([char]10)
     foreach ($x in $array)
     {	
@@ -362,17 +311,10 @@ $LOGMESSAGE1 = '---Drives with lowspace - Start ---' + [char]10 + [char]10
     		$LOGMESSAGE1 = $LOGMESSAGE1 + $line[0] + ' ' + $line[1] + ' free percent: ' + $line[4] + [char]10
     	}
     }    
-#}
-$LOGMESSAGE1 = $LOGMESSAGE1 + [char]10 + '---Drives with lowspace - End   ---' + [char]10 + [char]10
-
-$deadservers = $r['deadservers']
-if ($deadservers -gt '')
-{
-     $LOGMESSAGE1 = $LOGMESSAGE1 + [char]10 + 'There are dead servers today' + [char]10 + $deadservers + [char]10
-
 }
-
+$LOGMESSAGE1 = $LOGMESSAGE1 + [char]10 + '---Drives with lowspace - End   ---' + [char]10 + [char]10
 $LOGMESSAGE2 = 'Full Report' + [char]10
+$LOGMESSAGE2 = $LOGMESSAGE2 + 'Drive|Total|Free|Free%' + [char]10
 $LOGMESSAGE2 = $LOGMESSAGE2 + $r['fullreport'] + [char]10
 $LOGMESSAGE2 = $LOGMESSAGE2 + 'Process completed ' + [char]10
 $LOGMESSAGE2 = $LOGMESSAGE2 + (get-date) + [char]10
@@ -397,19 +339,26 @@ else
 {
     $msg = "No lowspace today" + [char]10
 }
-if ($drivesmessage -gt '')
-{
-    $msg = $msg + $drivesmessage + [char]10
-}
-if ($deadservers -gt '')
-{
-    $msg = $msg + $deadservers + [char]10
-}
+#if ($drivesmessage -gt '')
+#{
+#    $msg = $msg + $drivesmessage + [char]10
+#}
+#if ($deadservers -gt '')
+#{
+#    $msg = $msg + $deadservers + [char]10
+#}
 
 
 
-$msg = $msg + [char]10 + "Link to full report today" + [char]10 + 'http://ccldevsql1/sqldba/check_space_new.htm' + [char]10
+#$msg = $msg + [char]10 + "Link to full report today" + [char]10 + 'http://ccldevsql1/sqldba/check_space_new.htm' + [char]10
+$msg = $msg + [char]10 + "Link to full report today" + [char]10 + $WEBPAGE + [char]10
+
 
 $msg > $LOWSPACEFILE
 SendMail $msg  $EMAILTOLIST $LOGFILE $FROM $SUBJECT
 
+        
+#} #endregion of inlinescript
+#} #endregion of workflow
+#
+#Run-Workflow
