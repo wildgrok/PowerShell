@@ -4,6 +4,7 @@ Master_app_List_version4.ps1
 made from List_DB_Files.ps1
 Created: 4/3/2019 out of Master_app_List_version3.ps1
 Last updated:
+9/9/2019: added new report for servers configurations check
 8/28/2019: converted to fake workflow, changed all write-host
 8/20/2019: added size column to table [Database Files] and related population
 6/7/2019: added missing call to $SQL_Reload_EnvironmentsAndApplications
@@ -43,7 +44,31 @@ workflow Run-Workflow
     . e:\POWERSHELL\Master_App_List_CodeBlocks.ps1
 
     #===========================functions and scriptblocks=================================================
+    #added 9/10/2019    
+    $Fill_All_Sys_Configurations =
+    {
+      param ($SC, $SQL_sys_configurations, $global:SERVERNAME)
+	
+      # Imports
+      . e:\POWERSHELL\Master_App_List_CodeBlocks.ps1
+	
+      $l = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SC, $SQL_sys_configurations, "master"))
 
+      foreach($y in $l)
+      {
+        if ($SC -gt '' -and $y.name -gt '')
+        {
+          $name = $y.name
+          $value = $y.value
+          $SC2 = $SC.Replace('"', '')          
+          $insert = "INSERT INTO [Master_Application_List].[dbo].[Sys_Configurations] ([SQLSERVER],[name],[value]) VALUES "
+          $insert = $insert + " ('" + $SC2 + "','" + $name  + "','" + $value + "')" 
+          $ErrorActionPreference = "silentlycontinue"
+          $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($global:SERVERNAME, $insert, "master"))
+        }
+      }
+    }
+    
     $Fill_All_Logins =
     {
       param ($SC, $SQL_GetLogins, $global:SERVERNAME)
@@ -95,7 +120,6 @@ workflow Run-Workflow
 
     $Fill_DB_Files = 
     {
-
       param ($SC, $SQL_Get_Database_Files_Query, $global:SERVERNAME)
       # Imports
       . e:\POWERSHELL\Master_App_List_CodeBlocks.ps1		
@@ -295,9 +319,10 @@ workflow Run-Workflow
 
     #========================Start of sql server tables====================
 
-    $m = "Start time five sql server tables: " + (get-date).ToString()
+    $m = "Start time 6 sql server tables: " + (get-date).ToString()
     $m
     # Cleaning destination tables
+    Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($global:SERVERNAME, "truncate table [Master_Application_List].[dbo].[Sys_Configurations]", "master")
     Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($global:SERVERNAME, "truncate table [Master_Application_List].[dbo].[Database Files]", "master")
     Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($global:SERVERNAME, "truncate table [Master_Application_List].[dbo].[All Logins]", "master")
     Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($global:SERVERNAME, "truncate table [Master_Application_List].[dbo].[All Users]", "master")
@@ -325,11 +350,12 @@ workflow Run-Workflow
         $running = @(Get-Job  | Where-Object { $_.State -eq 'Running' })
         if ($running.Count -le $CONCURRENCY) 
         {
-            Start-Job -ScriptBlock $Fill_DB_Files -ArgumentList ($scurr, $SQL_Get_Database_Files_Query, $global:SERVERNAME)  	| Out-Null
-            Start-Job -ScriptBlock $Fill_All_Logins -ArgumentList ($scurr, $SQL_GetLogins, $global:SERVERNAME)					| Out-Null	
-            Start-Job -ScriptBlock $Fill_All_Users -ArgumentList ($scurr, $SQL_GetUsers, $global:SERVERNAME) 					| Out-Null
-            Start-Job -ScriptBlock $Fill_Server_And_DBs -ArgumentList ($scurr, $SQL_Get_DBSFromServer, $global:SERVERNAME)  	| Out-Null			
-            Start-Job -ScriptBlock $Fill_Missing_Backups -ArgumentList ($scurr, $SQL_GetBackupInfo, $global:SERVERNAME) 		| Out-Null		
+            Start-Job -ScriptBlock $Fill_All_Sys_Configurations -ArgumentList ($scurr, $SQL_sys_configurations, $global:SERVERNAME)  	| Out-Null
+            Start-Job -ScriptBlock $Fill_DB_Files -ArgumentList ($scurr, $SQL_Get_Database_Files_Query, $global:SERVERNAME)  	        | Out-Null
+            Start-Job -ScriptBlock $Fill_All_Logins -ArgumentList ($scurr, $SQL_GetLogins, $global:SERVERNAME)					        | Out-Null	
+            Start-Job -ScriptBlock $Fill_All_Users -ArgumentList ($scurr, $SQL_GetUsers, $global:SERVERNAME) 					        | Out-Null
+            Start-Job -ScriptBlock $Fill_Server_And_DBs -ArgumentList ($scurr, $SQL_Get_DBSFromServer, $global:SERVERNAME)  	        | Out-Null			
+            Start-Job -ScriptBlock $Fill_Missing_Backups -ArgumentList ($scurr, $SQL_GetBackupInfo, $global:SERVERNAME) 		        | Out-Null		
         } 
         else
         {
@@ -346,7 +372,7 @@ workflow Run-Workflow
     #Set-content -path c:\temp\svr.txt $SAVESERVER
     $m =  "Processed " + $cnt.ToString() + " servers"
     $m
-    $m = "End time five sql server tables: " + (get-date).ToString()
+    $m = "End time 6 sql server tables: " + (get-date).ToString()
     $m
     #==========================End of sql server tables====================
 
