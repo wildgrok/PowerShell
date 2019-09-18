@@ -327,3 +327,15 @@ WHERE [name] in
 )
 order by [name]
 "@
+
+$SQL_Truncate_SQL_Tables = 
+@"
+SET NOCOUNT ON
+truncate table [Master_Application_List].[dbo].[Sys_Configurations_XXX];
+truncate table [Master_Application_List].[dbo].[Database Files_XXX];
+truncate table [Master_Application_List].[dbo].[All Logins_XXX];
+truncate table [Master_Application_List].[dbo].[All Users_XXX];
+truncate table [Master_Application_List].[dbo].[Servers and Databases_XXX];
+truncate table [Master_Application_List].[dbo].[Missing Backups_XXX];
+truncate table [Master_Application_List].[dbo].[Environments And Applications_XXX]
+"@

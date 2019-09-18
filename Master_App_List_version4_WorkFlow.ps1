@@ -54,7 +54,7 @@ workflow Run-Workflow
     {	
         sequence
         {    
-            InlineScript
+            InlineScript        # first set of actions to be completed in parallel: machine related                  
             { 
                 Set-Location e:\POWERSHELL
                 . e:\POWERSHELL\Master_App_List_SQL_WorkFlow.ps1   
@@ -65,17 +65,71 @@ workflow Run-Workflow
 			}                
 	    } #end of sequence           
                 
-	}  #end of foreach -parallel           
+	}  #end of foreach -parallel 
+    
+    InlineScript 
+    {
+        $m = "End time two server tables: " + (get-date).ToString() + " Starting now 6 sql server tables"
+        $m
+	}
+    
+    #Now we start a new parallel process, this time for the SQL servers
+    #Preparing conditions
 
-    InlineScript #3
+    $SqlServerList = InlineScript #3
     {
         Set-Location e:\POWERSHELL
-#        . e:\POWERSHELL\Master_App_List_SQL_WorkFlow.ps1
-#        . e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1  
+        . e:\POWERSHELL\Master_App_List_SQL_WorkFlow.ps1   
+        . e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1  #imports ExecuteSQL and $SERVERNAME
+        . e:\POWERSHELL\Master_App_List_CodeBlocks2_WorkFlow.ps1
         
-        $m = "End time two server tables: " + (get-date).ToString()
-        $m
+        
+        # Cleaning destination tables
+#        Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, "truncate table [Master_Application_List].[dbo].[Sys_Configurations_XXX]", "master")
+#        Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, "truncate table [Master_Application_List].[dbo].[Database Files_XXX]", "master")
+#        Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, "truncate table [Master_Application_List].[dbo].[All Logins_XXX]", "master")
+#        Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, "truncate table [Master_Application_List].[dbo].[All Users_XXX]", "master")
+#        Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, "truncate table [Master_Application_List].[dbo].[Servers and Databases_XXX]", "master")
+#        Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, "truncate table [Master_Application_List].[dbo].[Missing Backups_XXX]", "master")
+#        Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, "truncate table [Master_Application_List].[dbo].[Environments And Applications_XXX]" , "master")
+#        Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $SQL_Reload_EnvironmentsAndApplications , "master") #uses [Environments And Applications_XXX]
+        #new
+        $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME,$SQL_Truncate_SQL_Tables))
+        #Needed
+        Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $SQL_Reload_EnvironmentsAndApplications , "master") #uses [Environments And Applications_XXX]
+        #Get list of sql servers, return it
+        $SqlServerList = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $SQL_GetSQLServers, "master"))
+        return $SqlServerList        
     } #end of inlinescript 3
+    
+    #Now that we have the list of sql servers we start a new parallel process
+    foreach –parallel ($k in $SqlServerList)
+    {	
+        sequence
+        {    
+            InlineScript        # second set of actions to be completed in parallel: sqlserver related                  
+            { 
+                Set-Location e:\POWERSHELL
+                . e:\POWERSHELL\Master_App_List_SQL_WorkFlow.ps1   
+                #. e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1 no need to call, included in next line import
+                . e:\POWERSHELL\Master_App_List_CodeBlocks2_WorkFlow.ps1
+                $null = (Invoke-Command -ScriptBlock $Fill_All_Sys_Configurations -ArgumentList ($using:k.SqlServer, $SQL_sys_configurations) )
+                $null = (Invoke-Command -ScriptBlock $Fill_DB_Files -ArgumentList ($using:k.SqlServer, $SQL_Get_Database_Files_Query) ) 	        
+                $null = (Invoke-Command -ScriptBlock $Fill_All_Logins -ArgumentList ($using:k.SqlServer, $SQL_GetLogins) )
+                $null = (Invoke-Command -ScriptBlock $Fill_All_Users -ArgumentList ($using:k.SqlServer, $SQL_GetUsers) )
+                $null = (Invoke-Command -ScriptBlock $Fill_Server_And_DBs -ArgumentList ($using:k.SqlServer, $SQL_Get_DBSFromServer) )		
+                $null = (Invoke-Command -ScriptBlock $Fill_Missing_Backups -ArgumentList ($using:k.SqlServer, $SQL_GetBackupInfo) )
+
+			}                
+	    } #end of sequence                           
+	}  #end of foreach -parallel 
+    
+     InlineScript 
+    {
+        $m = "End time six server tables: " + (get-date).ToString()
+        $m
+	}
+    
 }   #end of workflow
 
 Run-Workflow
