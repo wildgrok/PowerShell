@@ -1,8 +1,10 @@
 ﻿#========================================================================
 # Created with: SAPIEN Technologies, Inc., PowerShell Studio 2012 v3.1.35
 # Created on:   4/11/2019 10:42 AM
-#Last modified: 5/24/2019 added CheckPing
 # Created by:   jorgebe
+# Last modified
+# 9/18/2019: full test with workflow files
+# Master_App_List_CodeBlocks_WorkFlow.ps1, Master_App_List_CodeBlocks2_WorkFlow.ps1, Master_App_List_version4_WorkFlow.ps1
 # Organization: 
 # Filename:     
 #========================================================================

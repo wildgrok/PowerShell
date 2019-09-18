@@ -1,6 +1,8 @@
 <#
 version in \\CCLDEVSHRDDB1\e$\POWERSHELL
 last modified: 
+9/18/2019: full test with workflow files
+Master_App_List_CodeBlocks_WorkFlow.ps1, Master_App_List_CodeBlocks2_WorkFlow.ps1, Master_App_List_version4_WorkFlow.ps1
 9/9/2019: added [sys].configurations check
 #>
 
@@ -74,30 +76,17 @@ UPDATE u
    SET 
       u.[SqlVersion] = s.sqlversion
 	  from [Master_Application_List].[dbo].[Environments And Applications_XXX] u
- JOIN [Master_Application_List].[dbo].[Servers and Databases] s on
+ JOIN [Master_Application_List].[dbo].[Servers and Databases_XXX] s on
 	u.[Server] = s.[SqlServer]
---UPDATE u
---   SET 
---      u.[SqlVersion] = s.sqlversion
---	  from [Master_Application_List].[dbo].[Environments And Applications BACKUP] u
--- JOIN [Master_Application_List].[dbo].[Servers and Databases] s on
---	u.[Server] = s.[SqlServer]
+
 	
 UPDATE u
    SET 
       u.[Online_Offline] = s.[Online_Offline]
 	  from [Master_Application_List].[dbo].[Environments And Applications_XXX] u
- JOIN [Master_Application_List].[dbo].[Servers and Databases] s on
+ JOIN [Master_Application_List].[dbo].[Servers and Databases_XXX] s on
 	u.[Server] = s.[SqlServer]  and
-	u.[Database] = s.Database_Name
-	
---UPDATE u
---   SET 
---      u.[Online_Offline] = s.[Online_Offline]
---	  from [Master_Application_List].[dbo].[Environments And Applications BACKUP] u
--- JOIN [Master_Application_List].[dbo].[Servers and Databases] s on
---	u.[Server] = s.[SqlServer]  and
---	u.[Database] = s.Database_Name			
+	u.[Database] = s.Database_Name		
 "@
 
 #Enabled 9/1/2016
@@ -216,7 +205,6 @@ where bkdate < getdate() - 1
 order by db
 "@
 
-$SQL_ClearMissingBackupsTable = "truncate table [Master_Application_List].[dbo].[Missing Backups_XXX]"
 $SQL_InsertIntoBackupHistory = 
 @"
 SET NOCOUNT ON
@@ -226,14 +214,14 @@ INSERT INTO [Master_Application_List].[dbo].[Missing Backups History_XXX]
     ,[DBname]
     ,[BKDate]
 )
-select * FROM [Master_Application_List].[dbo].[Missing Backups]
-delete from [Master_Application_List].[dbo].[Missing Backups History]
+select * FROM [Master_Application_List].[dbo].[Missing Backups_XXX]
+delete from [Master_Application_List].[dbo].[Missing Backups History_XXX]
 where rundate < (getdate() - 30)
 "@
 
 $SQL_Insert_Production_Values = 
 @"
-INSERT INTO [Master_Application_List].[dbo].[Environments And Applications]
+INSERT INTO [Master_Application_List].[dbo].[Environments And Applications_XXX]
 (
 	[Application_Name]
    ,[Application Owner]
@@ -338,4 +326,11 @@ truncate table [Master_Application_List].[dbo].[All Users_XXX];
 truncate table [Master_Application_List].[dbo].[Servers and Databases_XXX];
 truncate table [Master_Application_List].[dbo].[Missing Backups_XXX];
 truncate table [Master_Application_List].[dbo].[Environments And Applications_XXX]
+"@
+
+$SQL_Truncate_Server_Tables = 
+@"
+SET NOCOUNT ON
+truncate table [Master_Application_List].[dbo].[SERVERS_LIVE_TODAY_XXX];
+truncate table [Master_Application_List].[dbo].[Machines_XXX];
 "@

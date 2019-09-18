@@ -5,6 +5,8 @@ made from Master_app_List_version4.ps1
 Uses Master_app_List_CodeBlocks_WorkFlow.ps1 and Master_app_List_CodeBlocks2_WorkFlow.ps1
 Created: 9/13/2019 
 Last updated:
+9/18/2019: full test with workflow files
+Master_App_List_CodeBlocks_WorkFlow.ps1, Master_App_List_CodeBlocks2_WorkFlow.ps1, Master_App_List_version4_WorkFlow.ps1
 9/16/2019: good test with full population of the two tables
 9/13/2019: Inital version only testing GetMachineType and CheckPing
 #>
@@ -15,21 +17,21 @@ workflow Run-Workflow
       InlineScript #1
       {
         Set-Location e:\POWERSHELL
-        . e:\POWERSHELL\Master_App_List_SQL_WorkFlow.ps1
-        . e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1  #ExecuteSQL, Invoke-SQLcmd3
-        . e:\POWERSHELL\Master_App_List_CodeBlocks2_WorkFlow.ps1 #CheckPing, GetMachineType
+#        . e:\POWERSHELL\Master_App_List_SQL_WorkFlow.ps1
+#        . e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1  #ExecuteSQL, Invoke-SQLcmd3
+#        . e:\POWERSHELL\Master_App_List_CodeBlocks2_WorkFlow.ps1 #CheckPing, GetMachineType
         
         #======================Start Program============================================
-#        $SERVERNAME = "CCLDEVSHRDDB1\DEVSQL2" comes from import from Master_App_List_CodeBlocks_WorkFlow.ps1
+        # $SERVERNAME = "CCLDEVSHRDDB1\DEVSQL2" comes from import from Master_App_List_CodeBlocks_WorkFlow.ps1
         $ErrorActionPreference = "silentlycontinue"
         cls
         "Process started " 
         $d1 = Get-Date
         $d1
-        " "
-        $m =  "Start time two server tables: " + (get-date).toString()
-        $m        
-     } #end of inlinescript 1
+        " "           
+    } #end of inlinescript 1
+    
+    
     
     # populating table SERVERS_LIVE_TODAY and Machines
     InlineScript #2
@@ -37,8 +39,11 @@ workflow Run-Workflow
         Set-Location e:\POWERSHELL
         . e:\POWERSHELL\Master_App_List_SQL_WorkFlow.ps1   
         . e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1
-        Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, 'truncate table [Master_Application_List].[dbo].[SERVERS_LIVE_TODAY_XXX]', "master")
-        Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, 'truncate table [Master_Application_List].[dbo].[Machines_XXX]', "master")
+        
+        $m =  "Start time two server tables: " + (get-date).toString()
+        $m                 
+        # clear SERVERS_LIVE_TODAY_XXX and Machines_XXX tables
+        $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME,$SQL_Truncate_Server_Tables))
 	}
     
     # Yes, you can return stuff from InlineScript
@@ -58,10 +63,10 @@ workflow Run-Workflow
             { 
                 Set-Location e:\POWERSHELL
                 . e:\POWERSHELL\Master_App_List_SQL_WorkFlow.ps1   
-                . e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1
+#                . e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1 no need to call, included in next line import
                 . e:\POWERSHELL\Master_App_List_CodeBlocks2_WorkFlow.ps1
-                Invoke-Command -ScriptBlock $CheckPing  -ArgumentList ($using:k.Machine) 		
-                Invoke-Command -ScriptBlock $GetMachineType -ArgumentList ($using:k.Machine) 
+                $null = (Invoke-Command -ScriptBlock $CheckPing  -ArgumentList ($using:k.Machine)) 		
+                $null = (Invoke-Command -ScriptBlock $GetMachineType -ArgumentList ($using:k.Machine)) 
 			}                
 	    } #end of sequence           
                 
@@ -74,29 +79,19 @@ workflow Run-Workflow
 	}
     
     #Now we start a new parallel process, this time for the SQL servers
-    #Preparing conditions
+    #Preparing conditions, getting list of sql servers
 
     $SqlServerList = InlineScript #3
     {
         Set-Location e:\POWERSHELL
         . e:\POWERSHELL\Master_App_List_SQL_WorkFlow.ps1   
-        . e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1  #imports ExecuteSQL and $SERVERNAME
-        . e:\POWERSHELL\Master_App_List_CodeBlocks2_WorkFlow.ps1
-        
-        
+        . e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1   #imports ExecuteSQL and $SERVERNAME
+        #. e:\POWERSHELL\Master_App_List_CodeBlocks2_WorkFlow.ps1 #not needed, only using ExecuteSQL 
+                
         # Cleaning destination tables
-#        Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, "truncate table [Master_Application_List].[dbo].[Sys_Configurations_XXX]", "master")
-#        Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, "truncate table [Master_Application_List].[dbo].[Database Files_XXX]", "master")
-#        Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, "truncate table [Master_Application_List].[dbo].[All Logins_XXX]", "master")
-#        Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, "truncate table [Master_Application_List].[dbo].[All Users_XXX]", "master")
-#        Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, "truncate table [Master_Application_List].[dbo].[Servers and Databases_XXX]", "master")
-#        Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, "truncate table [Master_Application_List].[dbo].[Missing Backups_XXX]", "master")
-#        Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, "truncate table [Master_Application_List].[dbo].[Environments And Applications_XXX]" , "master")
-#        Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $SQL_Reload_EnvironmentsAndApplications , "master") #uses [Environments And Applications_XXX]
-        #new
         $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME,$SQL_Truncate_SQL_Tables))
         #Needed
-        Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $SQL_Reload_EnvironmentsAndApplications , "master") #uses [Environments And Applications_XXX]
+        $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $SQL_Reload_EnvironmentsAndApplications , "master") )#uses [Environments And Applications_XXX]
         #Get list of sql servers, return it
         $SqlServerList = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $SQL_GetSQLServers, "master"))
         return $SqlServerList        
@@ -119,15 +114,33 @@ workflow Run-Workflow
                 $null = (Invoke-Command -ScriptBlock $Fill_All_Users -ArgumentList ($using:k.SqlServer, $SQL_GetUsers) )
                 $null = (Invoke-Command -ScriptBlock $Fill_Server_And_DBs -ArgumentList ($using:k.SqlServer, $SQL_Get_DBSFromServer) )		
                 $null = (Invoke-Command -ScriptBlock $Fill_Missing_Backups -ArgumentList ($using:k.SqlServer, $SQL_GetBackupInfo) )
-
 			}                
 	    } #end of sequence                           
 	}  #end of foreach -parallel 
     
      InlineScript 
     {
+        . e:\POWERSHELL\Master_App_List_SQL_WorkFlow.ps1        # imports sql 
+        . e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1 # imports ExecuteSQL
+
         $m = "End time six server tables: " + (get-date).ToString()
         $m
+        
+        #==========================Start of final misc steps ===============
+        $m = "Start time misc steps " + (get-date).ToString()
+        $m
+        # Now we need to merge (insert/update) the entries in [Servers and Databases] with
+        # the ones in [Environments And Applications]
+        $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $SQL_GetMissingFrom_ServersAndDatabases, "master"))
+        # SQLVersion is obtained during db expansion, so we update back also onlineoffline
+        $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $SQL_FixVersionsAndOnlineOffline, "master"))
+        # Update from main storage table [Environments And Applications BACKUP] the expanded lines in [Environments And Applications]
+        $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $SQL_UpdateFrom_EnvironmentsAndApplicationsBACKUP, "master"))
+        #insert to Missing backups history
+        $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $SQL_InsertIntoBackupHistory, "master"))
+        $m =  "End time misc steps and program " + (get-date).ToString()
+        $m
+        #==========================End of misc steps (non jobs)=================     
 	}
     
 }   #end of workflow
