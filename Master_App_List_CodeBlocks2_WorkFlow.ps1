@@ -22,7 +22,7 @@ $Fill_All_Sys_Configurations =
         {
             $name = $y.name
             $value = $y.value        
-            $insert = "INSERT INTO [Master_Application_List].[dbo].[Sys_Configurations_XXX] ([SQLSERVER],[name],[value]) VALUES "
+            $insert = "INSERT INTO [Master_Application_List].[dbo].[Sys_Configurations] ([SQLSERVER],[name],[value]) VALUES "
             $insert = $insert + " ('" + $SC + "','" + $name  + "','" + $value + "')" 
             $ErrorActionPreference = "silentlycontinue"
             $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $insert, "master"))
@@ -46,7 +46,7 @@ $Fill_All_Logins =
            $sysadmin = $y.sysadmin
            $isntgroup = $y.isntgroup
            $isntuser = $y.isntuser                
-           $logininsert = "INSERT INTO [Master_Application_List].[dbo].[All Logins_XXX] ([SQLSERVER],[name],[dbname],[sysadmin],[isntgroup],[isntuser]) VALUES "
+           $logininsert = "INSERT INTO [Master_Application_List].[dbo].[All Logins] ([SQLSERVER],[name],[dbname],[sysadmin],[isntgroup],[isntuser]) VALUES "
            $logininsert = $logininsert + " ('" + $SC + "','" + $name + "','" + $dbname + "','" + $sysadmin + "','" + $isntgroup + "','" + $isntuser + "')" 
            $ErrorActionPreference = "silentlycontinue"
            $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $logininsert, "master"))
@@ -69,7 +69,7 @@ $Fill_All_Users =
           $username = $uu.UserName
           $rolename = $uu.RoleName
           $SC2 = $SC.Replace('"', '') 
-          $userinsert = "INSERT INTO [Master_Application_List].[dbo].[All Users_XXX] ([SQLSERVER],[DB Name],[User Name],[Role Name]) VALUES "
+          $userinsert = "INSERT INTO [Master_Application_List].[dbo].[All Users] ([SQLSERVER],[DB Name],[User Name],[Role Name]) VALUES "
           $userinsert = $userinsert + " ('" + $SC + "','" + $dbname + "','" + $username + "','" + $rolename + "')"
           $ErrorActionPreference = "silentlycontinue"
           $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $userinsert, "master"))
@@ -95,7 +95,7 @@ $Fill_DB_Files =
             $h = $y.PhysicalFileName
             $g = $y.Type
             $z = $y.size
-            $dbinsert = "INSERT INTO [Master_Application_List].[dbo].[Database Files_XXX] ([SQLServer],[DatabaseName],[LogicalFileName],[PhysicalFileName],[Type],[size]) VALUES "
+            $dbinsert = "INSERT INTO [Master_Application_List].[dbo].[Database Files] ([SQLServer],[DatabaseName],[LogicalFileName],[PhysicalFileName],[Type],[size]) VALUES "
             $dbinsert = $dbinsert + "('" + $SC  + "','" + $o + "','" + $v +  "','" + $h + "','" + $g + "'," + $z + ")" 
             $ErrorActionPreference = "silentlycontinue"
             $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $dbinsert, "master"))
@@ -119,7 +119,7 @@ $Fill_Server_And_DBs =
           $o = $y.Online_Offline
           $v = $y.SqlVersion
           $SC2 = $SC.Replace('"', '') 
-          $dbinsert = "INSERT INTO [Master_Application_List].[dbo].[Servers and Databases_XXX] ([SQLServer],[Database_Name],[Online_Offline],[SqlVersion]) VALUES"
+          $dbinsert = "INSERT INTO [Master_Application_List].[dbo].[Servers and Databases] ([SQLServer],[Database_Name],[Online_Offline],[SqlVersion]) VALUES"
           $dbinsert = $dbinsert + "('" + $SC + "','" + $n + "','" + $o + "','" + $v + "')" 
           # needed for servers with no access
           $ErrorActionPreference = "silentlycontinue"
@@ -142,7 +142,7 @@ $Fill_Missing_Backups =
         if ($db -gt '')
         {
           $dt = $y.bkdate
-          $s = "INSERT INTO [Master_Application_List].[dbo].[Missing Backups_XXX]([SqlServer],[DBname],[BKDate]) VALUES ('"
+          $s = "INSERT INTO [Master_Application_List].[dbo].[Missing Backups]([SqlServer],[DBname],[BKDate]) VALUES ('"
           $s = $s + $SC + "','" + $db + "','" + $dt + "')"
           $ErrorActionPreference = "silentlycontinue"
           $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $s, "master"))
@@ -172,11 +172,11 @@ $CheckPing =
           $p2 = [int]$p
           if ($p -gt "")  
           {
-            $s = "INSERT INTO [Master_Application_List].[dbo].[SERVERS_LIVE_TODAY_XXX] (Machine) VALUES ('" + $server + "')"		
+            $s = "INSERT INTO [Master_Application_List].[dbo].[SERVERS_LIVE_TODAY] (Machine) VALUES ('" + $server + "')"		
           }
           else
           {
-            $s = "INSERT INTO [Master_Application_List].[dbo].[SERVERS_LIVE_TODAY_XXX] (Machine, Status) VALUES ('" + $server+ "', 'DEAD TODAY')"
+            $s = "INSERT INTO [Master_Application_List].[dbo].[SERVERS_LIVE_TODAY] (Machine, Status) VALUES ('" + $server+ "', 'DEAD TODAY')"
           }
           $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $s, "master"))	
 }
@@ -210,7 +210,7 @@ $GetMachineType =
           $t = $mm.Type
           $m = $mm.Manufacturer
           $md = $mm.Model
-          $dbinsert = "INSERT INTO [Master_Application_List].[dbo].[Machines_XXX]([ComputerName],[Type],[Manufacturer],[Model]) VALUES "
+          $dbinsert = "INSERT INTO [Master_Application_List].[dbo].[Machines]([ComputerName],[Type],[Manufacturer],[Model]) VALUES "
           $dbinsert = $dbinsert + "('" + $Computer + "','" + $t + "','" + $m + "','" + $md + "')"  
           $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $dbinsert, "master"))			
 } 

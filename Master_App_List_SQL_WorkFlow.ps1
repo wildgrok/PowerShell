@@ -8,7 +8,7 @@ Master_App_List_CodeBlocks_WorkFlow.ps1, Master_App_List_CodeBlocks2_WorkFlow.ps
 
 $SQL_Reload_EnvironmentsAndApplications = 
 @"
-	INSERT INTO [Master_Application_List].[dbo].[Environments And Applications_XXX]
+	INSERT INTO [Master_Application_List].[dbo].[Environments And Applications]
 	(
 	[Application_Name]
 	      ,[Application Owner]
@@ -40,7 +40,7 @@ $SQL_Get_DBSFromServer = 'set nocount on select name, state_desc as Online_Offli
 $SQL_GetMissingFrom_ServersAndDatabases = 
 @"
 SET NOCOUNT ON
-INSERT INTO [Master_Application_List].[dbo].[Environments And Applications_XXX]
+INSERT INTO [Master_Application_List].[dbo].[Environments And Applications]
            ([Application_Name]
            ,[Application Owner]
 		   ,[Application_Tech]
@@ -61,8 +61,8 @@ b.[Application_Name]
 ,b.[ShoreSide_Shipboard]
 ,a.[SqlVersion]	 
 ,a.[Online_Offline]
-  FROM [Master_Application_List].[dbo].[Environments And Applications_XXX] b  
-  RIGHT JOIN  [Master_Application_List].[dbo].[Servers and Databases_XXX] a on 
+  FROM [Master_Application_List].[dbo].[Environments And Applications] b  
+  RIGHT JOIN  [Master_Application_List].[dbo].[Servers and Databases] a on 
   a.SQLServer = b.[Server] AND
   a.Database_Name = b.[Database]
   where b.[Server] is null and 
@@ -75,16 +75,16 @@ SET NOCOUNT ON
 UPDATE u
    SET 
       u.[SqlVersion] = s.sqlversion
-	  from [Master_Application_List].[dbo].[Environments And Applications_XXX] u
- JOIN [Master_Application_List].[dbo].[Servers and Databases_XXX] s on
+	  from [Master_Application_List].[dbo].[Environments And Applications] u
+ JOIN [Master_Application_List].[dbo].[Servers and Databases] s on
 	u.[Server] = s.[SqlServer]
 
 	
 UPDATE u
    SET 
       u.[Online_Offline] = s.[Online_Offline]
-	  from [Master_Application_List].[dbo].[Environments And Applications_XXX] u
- JOIN [Master_Application_List].[dbo].[Servers and Databases_XXX] s on
+	  from [Master_Application_List].[dbo].[Environments And Applications] u
+ JOIN [Master_Application_List].[dbo].[Servers and Databases] s on
 	u.[Server] = s.[SqlServer]  and
 	u.[Database] = s.Database_Name		
 "@
@@ -105,7 +105,7 @@ UPDATE u
       --,u.[Online_Offline] = s.[Online_Offline] 
       --,u.[LastUpdated] = <LastUpdated, datetime,>
 
-FROM [Master_Application_List].[dbo].[Environments And Applications_XXX] u
+FROM [Master_Application_List].[dbo].[Environments And Applications] u
 RIGHT JOIN [Master_Application_List].[dbo].[Environments And Applications BACKUP] s on
 	u.[Server] = s.[Server] AND
 	u.[Database] = s.[Database]
@@ -208,20 +208,20 @@ order by db
 $SQL_InsertIntoBackupHistory = 
 @"
 SET NOCOUNT ON
-INSERT INTO [Master_Application_List].[dbo].[Missing Backups History_XXX]
+INSERT INTO [Master_Application_List].[dbo].[Missing Backups History]
 (
 	[SqlServer]
     ,[DBname]
     ,[BKDate]
 )
-select * FROM [Master_Application_List].[dbo].[Missing Backups_XXX]
-delete from [Master_Application_List].[dbo].[Missing Backups History_XXX]
+select * FROM [Master_Application_List].[dbo].[Missing Backups]
+delete from [Master_Application_List].[dbo].[Missing Backups History]
 where rundate < (getdate() - 30)
 "@
 
 $SQL_Insert_Production_Values = 
 @"
-INSERT INTO [Master_Application_List].[dbo].[Environments And Applications_XXX]
+INSERT INTO [Master_Application_List].[dbo].[Environments And Applications]
 (
 	[Application_Name]
    ,[Application Owner]
@@ -319,18 +319,18 @@ order by [name]
 $SQL_Truncate_SQL_Tables = 
 @"
 SET NOCOUNT ON
-truncate table [Master_Application_List].[dbo].[Sys_Configurations_XXX];
-truncate table [Master_Application_List].[dbo].[Database Files_XXX];
-truncate table [Master_Application_List].[dbo].[All Logins_XXX];
-truncate table [Master_Application_List].[dbo].[All Users_XXX];
-truncate table [Master_Application_List].[dbo].[Servers and Databases_XXX];
-truncate table [Master_Application_List].[dbo].[Missing Backups_XXX];
-truncate table [Master_Application_List].[dbo].[Environments And Applications_XXX]
+truncate table [Master_Application_List].[dbo].[Sys_Configurations];
+truncate table [Master_Application_List].[dbo].[Database Files];
+truncate table [Master_Application_List].[dbo].[All Logins];
+truncate table [Master_Application_List].[dbo].[All Users];
+truncate table [Master_Application_List].[dbo].[Servers and Databases];
+truncate table [Master_Application_List].[dbo].[Missing Backups];
+truncate table [Master_Application_List].[dbo].[Environments And Applications]
 "@
 
 $SQL_Truncate_Server_Tables = 
 @"
 SET NOCOUNT ON
-truncate table [Master_Application_List].[dbo].[SERVERS_LIVE_TODAY_XXX];
-truncate table [Master_Application_List].[dbo].[Machines_XXX];
+truncate table [Master_Application_List].[dbo].[SERVERS_LIVE_TODAY];
+truncate table [Master_Application_List].[dbo].[Machines];
 "@
