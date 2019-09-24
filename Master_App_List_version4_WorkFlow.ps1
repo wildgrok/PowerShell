@@ -5,6 +5,7 @@ made from Master_app_List_version4.ps1
 Uses Master_app_List_CodeBlocks_WorkFlow.ps1 and Master_app_List_CodeBlocks2_WorkFlow.ps1
 Created: 9/13/2019 
 Last updated:
+9/24/2019: commented the sequence statements, also tested inlinescript for each line, did not work, much longer exec time
 9/18/2019: full test with workflow files
 Master_App_List_CodeBlocks_WorkFlow.ps1, Master_App_List_CodeBlocks2_WorkFlow.ps1, Master_App_List_version4_WorkFlow.ps1
 9/16/2019: good test with full population of the two tables
@@ -50,17 +51,17 @@ workflow Run-Workflow
     # this section processes the servers (not sql servers)
     foreach –parallel ($k in $listofservers)
     {	
-        sequence
-        {    
+#        sequence
+#        {    
             InlineScript        # first set of actions to be completed in parallel: machine related                  
             { 
                 Set-Location e:\POWERSHELL
                 . e:\POWERSHELL\Master_App_List_SQL_WorkFlow.ps1   
                 . e:\POWERSHELL\Master_App_List_CodeBlocks2_WorkFlow.ps1
-                $null = (Invoke-Command -ScriptBlock $CheckPing  -ArgumentList ($using:k.Machine)) 		
+                $null = (Invoke-Command -ScriptBlock $CheckPing  -ArgumentList ($using:k.Machine)) 
                 $null = (Invoke-Command -ScriptBlock $GetMachineType -ArgumentList ($using:k.Machine)) 
 			}                
-	    }   #end of sequence                           
+#	    }   #end of sequence                           
 	}       #end of foreach -parallel 
     
     InlineScript # just of display
@@ -76,8 +77,6 @@ workflow Run-Workflow
         Set-Location e:\POWERSHELL
         . e:\POWERSHELL\Master_App_List_SQL_WorkFlow.ps1   
         . e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1   #imports ExecuteSQL and $SERVERNAME
-        #. e:\POWERSHELL\Master_App_List_CodeBlocks2_WorkFlow.ps1 #not needed, only using ExecuteSQL 
-                
         # Cleaning destination tables
         $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME,$SQL_Truncate_SQL_Tables))
         #Needed
@@ -90,22 +89,21 @@ workflow Run-Workflow
     #Now that we have the list of sql servers we start a new parallel process
     foreach –parallel ($k in $SqlServerList)
     {	
-        sequence
-        {    
-            InlineScript        # second set of actions to be completed in parallel: sqlserver related                  
-            { 
+#        sequence
+#        { 
+            InlineScript
+            {
                 Set-Location e:\POWERSHELL
                 . e:\POWERSHELL\Master_App_List_SQL_WorkFlow.ps1   
-                #. e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1 no need to call, included in next line import
                 . e:\POWERSHELL\Master_App_List_CodeBlocks2_WorkFlow.ps1
                 $null = (Invoke-Command -ScriptBlock $Fill_All_Sys_Configurations -ArgumentList ($using:k.SqlServer, $SQL_sys_configurations) )
                 $null = (Invoke-Command -ScriptBlock $Fill_DB_Files -ArgumentList ($using:k.SqlServer, $SQL_Get_Database_Files_Query) ) 	        
                 $null = (Invoke-Command -ScriptBlock $Fill_All_Logins -ArgumentList ($using:k.SqlServer, $SQL_GetLogins) )
                 $null = (Invoke-Command -ScriptBlock $Fill_All_Users -ArgumentList ($using:k.SqlServer, $SQL_GetUsers) )
-                $null = (Invoke-Command -ScriptBlock $Fill_Server_And_DBs -ArgumentList ($using:k.SqlServer, $SQL_Get_DBSFromServer) )		
-                $null = (Invoke-Command -ScriptBlock $Fill_Missing_Backups -ArgumentList ($using:k.SqlServer, $SQL_GetBackupInfo) )
-			}                
-	    }   #end of sequence                           
+                $null = (Invoke-Command -ScriptBlock $Fill_Server_And_DBs -ArgumentList ($using:k.SqlServer, $SQL_Get_DBSFromServer) )		            
+                $null = (Invoke-Command -ScriptBlock $Fill_Missing_Backups -ArgumentList ($using:k.SqlServer, $SQL_GetBackupInfo) )			                
+			}
+#	    }   #end of sequence                           
 	}       #end of foreach -parallel 
     
     InlineScript #5
@@ -117,8 +115,7 @@ workflow Run-Workflow
         #==========================Start of final misc steps ===============
         $m = "Start time misc steps " + (get-date).ToString()
         $m
-        # Now we need to merge (insert/update) the entries in [Servers and Databases] with
-        # the ones in [Environments And Applications]
+        # Merge (insert/update) the entries in [Servers and Databases] withthe ones in [Environments And Applications]
         $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $SQL_GetMissingFrom_ServersAndDatabases, "master"))
         # SQLVersion is obtained during db expansion, so we update back also onlineoffline
         $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $SQL_FixVersionsAndOnlineOffline, "master"))
