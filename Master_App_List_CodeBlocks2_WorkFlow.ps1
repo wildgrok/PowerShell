@@ -5,7 +5,8 @@
 # Master_App_List_CodeBlocks_WorkFlow.ps1, Master_App_List_CodeBlocks2_WorkFlow.ps1, Master_App_List_version4_WorkFlow.ps1
 # Created by:   
 # Organization: 
-# Filename:  Master_App_List_CodeBlocks2_WorkFlow.ps1	   
+# Filename:  Master_App_List_CodeBlocks2_WorkFlow.ps1
+#changed 10/18/2019 $CheckPing
 #========================================================================
 
 #===========================functions and scriptblocks=================================================     
@@ -36,22 +37,26 @@ $Fill_All_Logins =
     . e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1
     $SC2 = [char]34 + $SC + [char]34 
     $ErrorActionPreference = "silentlycontinue"
-      $l = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SC2, $SQL_GetLogins, "master"))
-      foreach($y in $l)
-      {
+    $l = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SC2, $SQL_GetLogins, "master"))
+    foreach($y in $l)
+    {
         if ($SC -gt '' -and $y.name -gt '')
         {
            $name = $y.name
            $dbname = $y.dbname
            $sysadmin = $y.sysadmin
            $isntgroup = $y.isntgroup
-           $isntuser = $y.isntuser                
-           $logininsert = "INSERT INTO [Master_Application_List].[dbo].[All Logins] ([SQLSERVER],[name],[dbname],[sysadmin],[isntgroup],[isntuser]) VALUES "
-           $logininsert = $logininsert + " ('" + $SC + "','" + $name + "','" + $dbname + "','" + $sysadmin + "','" + $isntgroup + "','" + $isntuser + "')" 
+           $isntuser = $y.isntuser 
+           $sid = $y.sid
+#           $logininsert = "INSERT INTO [Master_Application_List].[dbo].[All Logins] ([SQLSERVER],[name],[dbname],[sysadmin],[isntgroup],[isntuser]) VALUES "
+#           $logininsert = $logininsert + " ('" + $SC + "','" + $name + "','" + $dbname + "','" + $sysadmin + "','" + $isntgroup + "','" + $isntuser + "')" 
+           $logininsert = "INSERT INTO [Master_Application_List].[dbo].[All Logins] ([SQLSERVER],[name],[dbname],[sysadmin],[isntgroup],[isntuser], [sid]) VALUES "
+           $logininsert = $logininsert + " ('" + $SC + "','" + $name + "','" + $dbname + "','" + $sysadmin + "','" + $isntgroup + "','" + $isntuser + "'," + $sid + ")" 
+
            $ErrorActionPreference = "silentlycontinue"
            $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $logininsert, "master"))
         }
-      }
+    }
 }
 
 $Fill_All_Users =
@@ -75,14 +80,12 @@ $Fill_All_Users =
           $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $userinsert, "master"))
         }
     }   
-    }
+}
 
 $Fill_DB_Files = 
 {
     param ($SC, $SQL_Get_Database_Files_Query)
-    . e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1
-    
-    
+    . e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1   
     $SC2 = [char]34 + $SC + [char]34
     $ErrorActionPreference = "silentlycontinue"
     $d = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SC2, $SQL_Get_Database_Files_Query, "master"))	
@@ -106,8 +109,7 @@ $Fill_DB_Files =
 $Fill_Server_And_DBs = 
 {
     param ($SC, $SQL_Get_DBSFromServer)
-    . e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1
-    
+    . e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1    
     $SC2 = [char]34 + $SC + [char]34
     $ErrorActionPreference = "silentlycontinue"    
     $svrdbs = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SC2, $SQL_Get_DBSFromServer, "master"))	
@@ -150,69 +152,72 @@ $Fill_Missing_Backups =
     }	
 }
 
-
+#changed 10/18/2019
+#using Test-Connection -ComputerName $server -Count 1 -ErrorAction SilentlyContinue -Quiet
 $CheckPing = 
 {
-          param ($server)
-          . e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1	#ExecuteSQL imported here
-          $v = (ping $server -n 1)
-          foreach ($k in $v)
-          {
-            if ($k.StartsWith("Reply"))
-            { break }
-            else
-            { if ($k.StartsWith("Request timed out")) { return "" }	}
-          }
-          $l = $k.Replace('<', '=')
-          $lst = $l.split('=')[2]
-          if ($lst)
-          { $ping = $lst.Replace('ms TTL', '') }
-          else { $ping = "" }		
-          $p = $ping.Trim()
-          $p2 = [int]$p
-          if ($p -gt "")  
-          {
-            $s = "INSERT INTO [Master_Application_List].[dbo].[SERVERS_LIVE_TODAY] (Machine) VALUES ('" + $server + "')"		
-          }
-          else
-          {
-            $s = "INSERT INTO [Master_Application_List].[dbo].[SERVERS_LIVE_TODAY] (Machine, Status) VALUES ('" + $server+ "', 'DEAD TODAY')"
-          }
-          $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $s, "master"))	
+    param ($server)
+    . e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1	#ExecuteSQL imported here
+    $ret = (Test-Connection -ComputerName $server -Count 1 -ErrorAction SilentlyContinue -Quiet) 
+#          $v = (ping $server -n 1)
+#          foreach ($k in $v)
+#          {
+#            if ($k.StartsWith("Reply"))
+#            { break }
+#            else
+#            { if ($k.StartsWith("Request timed out")) { return "" }	}
+#          }
+#          $l = $k.Replace('<', '=')
+#          $lst = $l.split('=')[2]
+#          if ($lst)
+#          { $ping = $lst.Replace('ms TTL', '') }
+#          else { $ping = "" }		
+#          $p = $ping.Trim()
+#          $p2 = [int]$p
+#          if ($p -gt "")  
+    if ($ret)
+    {
+        $s = "INSERT INTO [Master_Application_List].[dbo].[SERVERS_LIVE_TODAY] (Machine) VALUES ('" + $server + "')"		
+    }
+    else
+    {
+        $s = "INSERT INTO [Master_Application_List].[dbo].[SERVERS_LIVE_TODAY] (Machine, Status) VALUES ('" + $server+ "', 'DEAD TODAY')"
+    }
+    $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $s, "master"))	
 }
 
 $GetMachineType =
 {
-          param($Computer)
-          . e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1	#$ExecuteSQL imported here	
-          $ErrorActionPreference = "silentlycontinue"
-          $Credential = [System.Management.Automation.PSCredential]::Empty
-          # Check to see if $Computer resolves DNS lookup successfuly.
-          $null = [System.Net.DNS]::GetHostEntry($Computer)
-          $ComputerSystemInfo = Get-WmiObject -Class Win32_ComputerSystem -ComputerName $Computer -ErrorAction silentlycontinue -Credential $Credential           
-          switch ($ComputerSystemInfo.Model) 
-          {                  
-            # Check for Hyper-V Machine Type
-            "Virtual Machine" 			{ $MachineType="VM" }
-            # Check for VMware Machine Type
-            "VMware Virtual Platform" 	{ $MachineType="VM" }
-            # Check for Oracle VM Machine Type
-            "VirtualBox" 				{ $MachineType="VM" }
-            # Check for Xen
-            "HVM domU" 					{ $MachineType="VM" }
-            # Otherwise it is a physical Box
-            default 					{ $MachineType="Physical" }
-          }               
-          $mm = @{}
-          $mm['Type'] = $MachineType 
-          $mm['Manufacturer'] = $ComputerSystemInfo.Manufacturer
-          $mm['Model'] = $ComputerSystemInfo.Model
-          $t = $mm.Type
-          $m = $mm.Manufacturer
-          $md = $mm.Model
-          $dbinsert = "INSERT INTO [Master_Application_List].[dbo].[Machines]([ComputerName],[Type],[Manufacturer],[Model]) VALUES "
-          $dbinsert = $dbinsert + "('" + $Computer + "','" + $t + "','" + $m + "','" + $md + "')"  
-          $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $dbinsert, "master"))			
+    param($Computer)
+    . e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1	#$ExecuteSQL imported here	
+    $ErrorActionPreference = "silentlycontinue"
+    $Credential = [System.Management.Automation.PSCredential]::Empty
+    # Check to see if $Computer resolves DNS lookup successfuly.
+    $null = [System.Net.DNS]::GetHostEntry($Computer)
+    $ComputerSystemInfo = Get-WmiObject -Class Win32_ComputerSystem -ComputerName $Computer -ErrorAction silentlycontinue -Credential $Credential           
+    switch ($ComputerSystemInfo.Model) 
+    {                  
+        # Check for Hyper-V Machine Type
+        "Virtual Machine" 			{ $MachineType="VM" }
+        # Check for VMware Machine Type
+        "VMware Virtual Platform" 	{ $MachineType="VM" }
+        # Check for Oracle VM Machine Type
+        "VirtualBox" 				{ $MachineType="VM" }
+        # Check for Xen
+        "HVM domU" 					{ $MachineType="VM" }
+        # Otherwise it is a physical Box
+        default 					{ $MachineType="Physical" }
+    }               
+    $mm = @{}
+    $mm['Type'] = $MachineType 
+    $mm['Manufacturer'] = $ComputerSystemInfo.Manufacturer
+    $mm['Model'] = $ComputerSystemInfo.Model
+    $t = $mm.Type
+    $m = $mm.Manufacturer
+    $md = $mm.Model
+    $dbinsert = "INSERT INTO [Master_Application_List].[dbo].[Machines]([ComputerName],[Type],[Manufacturer],[Model]) VALUES "
+    $dbinsert = $dbinsert + "('" + $Computer + "','" + $t + "','" + $m + "','" + $md + "')"  
+    $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $dbinsert, "master"))			
 } 
 #===========================functions and scriptblocks end=================================================
 

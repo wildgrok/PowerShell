@@ -1,6 +1,8 @@
 <#
 version in \\CCLDEVSHRDDB1\e$\POWERSHELL
 last modified: 
+10/23/2019
+added sid column to $SQL_GetLogins
 9/18/2019: full test with workflow files
 Master_App_List_CodeBlocks_WorkFlow.ps1, Master_App_List_CodeBlocks2_WorkFlow.ps1, Master_App_List_version4_WorkFlow.ps1
 9/9/2019: added [sys].configurations check
@@ -112,9 +114,10 @@ RIGHT JOIN [Master_Application_List].[dbo].[Environments And Applications BACKUP
 "@
 
 # added 8/24/2017
+#CHANGED 10/23/2019 added sid column
 $SQL_GetLogins =
 @"
-select name, dbname, sysadmin, isntgroup, isntuser
+select name, dbname, sysadmin, isntgroup, isntuser,cast(sid as bigint) as 'sid' 
 from master.dbo.syslogins where left(name, 2) <> '##' 
 order by name, dbname
 "@

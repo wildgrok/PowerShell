@@ -49,7 +49,9 @@ workflow Run-Workflow
 	}       # end of inlinescript 3
     
     # this section processes the servers (not sql servers)
-    foreach –parallel ($k in $listofservers)
+#    foreach –parallel ($k in $listofservers)
+    #NEW TEST 10/9/2019 with -ThrottleLimit
+    foreach –parallel -ThrottleLimit 50 ($k in $listofservers)
     {	
 #        sequence
 #        {    
@@ -66,8 +68,9 @@ workflow Run-Workflow
     
     InlineScript # just of display
     {
-        $m = "End time two server tables: " + (get-date).ToString() + " Starting now 6 sql server tables"
+        $m = "End time two server tables: " + (get-date).ToString()
         $m
+        "Starting now 6 sql server tables"
 	}
     
     #Now we start a new parallel process, this time for the SQL servers
@@ -87,7 +90,7 @@ workflow Run-Workflow
     }       #end of inlinescript 4
     
     #Now that we have the list of sql servers we start a new parallel process
-    foreach –parallel ($k in $SqlServerList)
+    foreach –parallel -ThrottleLimit 50 ($k in $SqlServerList)
     {	
 #        sequence
 #        { 
