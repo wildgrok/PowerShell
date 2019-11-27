@@ -1,6 +1,8 @@
 <#
 version in \\CCLDEVSHRDDB1\e$\POWERSHELL
-last modified: 
+last modified:
+11/12/2019
+Added ALL_SERVICES table truncate 
 10/23/2019
 added sid column to $SQL_GetLogins
 9/18/2019: full test with workflow files
@@ -336,4 +338,5 @@ $SQL_Truncate_Server_Tables =
 SET NOCOUNT ON
 truncate table [Master_Application_List].[dbo].[SERVERS_LIVE_TODAY];
 truncate table [Master_Application_List].[dbo].[Machines];
+truncate table [Master_Application_List].[dbo].[ALL_SERVICES];
 "@

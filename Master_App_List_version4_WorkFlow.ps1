@@ -33,9 +33,9 @@ workflow Run-Workflow
         Set-Location e:\POWERSHELL
         . e:\POWERSHELL\Master_App_List_SQL_WorkFlow.ps1        # to import $SQL_Truncate_Server_Tables  
         . e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1 # to import ExecuteSQL        
-        $m =  "Start time two server tables: " + (get-date).toString()
+        $m =  "Start time three server tables: " + (get-date).toString()
         $m                 
-        # clear SERVERS_LIVE_TODAY and Machines tables
+        # clear SERVERS_LIVE_TODAY, Machines, ALL_SERVICES tables
         $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME,$SQL_Truncate_Server_Tables))
 	}       # end of inlinescript 2
     
@@ -62,13 +62,14 @@ workflow Run-Workflow
                 . e:\POWERSHELL\Master_App_List_CodeBlocks2_WorkFlow.ps1
                 $null = (Invoke-Command -ScriptBlock $CheckPing  -ArgumentList ($using:k.Machine)) 
                 $null = (Invoke-Command -ScriptBlock $GetMachineType -ArgumentList ($using:k.Machine)) 
+                $null = (Invoke-Command -ScriptBlock $GetServices -ArgumentList ($using:k.Machine)) 
 			}                
 #	    }   #end of sequence                           
 	}       #end of foreach -parallel 
     
     InlineScript # just of display
     {
-        $m = "End time two server tables: " + (get-date).ToString()
+        $m = "End time three server tables: " + (get-date).ToString()
         $m
         "Starting now 6 sql server tables"
 	}

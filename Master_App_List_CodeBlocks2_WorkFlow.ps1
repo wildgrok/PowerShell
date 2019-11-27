@@ -1,5 +1,6 @@
 ﻿#========================================================================
 # Created with: SAPIEN Technologies, Inc., PowerShell Studio 2012 v3.1.35
+# version in version in \\CCLDEVSHRDDB1\e$\POWERSHELL (production)
 # Created on:   9/13/2019 4:54 PM
 # 9/18/2019: full test with workflow files
 # Master_App_List_CodeBlocks_WorkFlow.ps1, Master_App_List_CodeBlocks2_WorkFlow.ps1, Master_App_List_version4_WorkFlow.ps1
@@ -7,6 +8,7 @@
 # Organization: 
 # Filename:  Master_App_List_CodeBlocks2_WorkFlow.ps1
 #changed 10/18/2019 $CheckPing
+# added $GetServices
 #========================================================================
 
 #===========================functions and scriptblocks=================================================     
@@ -218,6 +220,28 @@ $GetMachineType =
     $dbinsert = "INSERT INTO [Master_Application_List].[dbo].[Machines]([ComputerName],[Type],[Manufacturer],[Model]) VALUES "
     $dbinsert = $dbinsert + "('" + $Computer + "','" + $t + "','" + $m + "','" + $md + "')"  
     $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $dbinsert, "master"))			
+} 
+
+#New 11/12/2019
+$GetServices =
+{
+    param($Computer)
+    . e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1	#$ExecuteSQL imported here	
+    $ErrorActionPreference = "silentlycontinue"
+    # $Credential = [System.Management.Automation.PSCredential]::Empty
+    # # Check to see if $Computer resolves DNS lookup successfuly.
+    # $null = [System.Net.DNS]::GetHostEntry($Computer)
+    # $ComputerSystemInfo = Get-WmiObject -Class Win32_ComputerSystem -ComputerName $Computer -ErrorAction silentlycontinue -Credential $Credential           
+    $r = (Get-Service -ComputerName $Computer)
+    foreach ($k in $r)
+    {
+        if ($k.Name -gt '')
+        {
+            $dbinsert = "INSERT INTO [Master_Application_List].[dbo].[ALL_SERVICES]([Computer],[servicename],[displayname],[status]) VALUES "
+            $dbinsert = $dbinsert + "('" + $Computer + "','" + $k.Name + "','" + $k.DisplayName + "','" + $k.Status + "')"  
+            $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $dbinsert, "master"))			
+        }
+    }
 } 
 #===========================functions and scriptblocks end=================================================
 
