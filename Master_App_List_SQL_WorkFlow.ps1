@@ -1,6 +1,7 @@
 <#
 version in \\CCLDEVSHRDDB1\e$\POWERSHELL
 last modified:
+12/11/2019: changed $SQL_Reload_EnvironmentsAndApplications
 11/12/2019
 Added ALL_SERVICES table truncate 
 10/23/2019
@@ -23,7 +24,7 @@ $SQL_Reload_EnvironmentsAndApplications =
 	      ,[ShoreSide_Shipboard]
 	      ,[SqlVersion]
 	      ,[Online_Offline]
-	)
+   )   
 	SELECT distinct
 	a.[Application_Name]
 	,a.[Application Owner]
@@ -35,7 +36,10 @@ $SQL_Reload_EnvironmentsAndApplications =
 	,a.[SqlVersion]	 
 	,a.[Online_Offline]
 	FROM [Master_Application_List].[dbo].[Environments And Applications BACKUP] a
-	  order by a.[Environment] ,a.[Server]
+	join [Master_Application_List].[dbo].[SERVERS_LIVE_TODAY] b on
+		a.[Server] like (b.Machine + '%') and
+		b.[Status] is null 	
+	order by a.[Environment] ,a.[Server]
 "@
 
 $SQL_GetSQLServers = 'select SqlServer from [Master_Application_List].[dbo].[VW_SQLSERVERS] order by SqlServer'
