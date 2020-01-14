@@ -2,6 +2,12 @@
 # version in c:\codecamp, from Basic_WorkFlow.ps1 
 # Last modified: 1/9/2020 (adds Suspend-Workflow)
 
+# Preventive maintenance for testing 
+# Write-Output "Killing existing jobs . . ."
+# Get-Job | Remove-Job -Force
+# Write-Output "Done."
+# Write-Output " "
+
 
 workflow RunTasks
  {	
@@ -9,11 +15,7 @@ workflow RunTasks
 
    InlineScript #1
    {
-        # Preventive maintenance for testing 
-        # Write-Output "Killing existing jobs . . ."
-        # Get-Job | Remove-Job -Force
-        # Write-Output "Done."
-        # Write-Output " "
+        
 
         Write-Output "Process starts"
         Write-Output (get-date).tostring()
@@ -35,19 +37,30 @@ workflow RunTasks
         # for each item in the foreach -parallel they will be executed in order 
         sequence 
         {     
-                InlineScript #3 file generation task
+                $fsize = InlineScript #3 file generation task
                 {
                     #Yes Virginia, we can import functions and codeblocks in WorkFlows					
                     . C:\CODECAMP\Basic_WorkFlow_CodeBlocks.ps1		# brings GetParams, Invoke-SqlCmd3						
                     $WORKFOLDER = 'C:\CODECAMP\'
-                    Write-Output ("computer:" + $using:computer)
+                    # Write-Output ("computer:" + $using:computer) does not print computer
+                    # Write-Output ($using:computer)
+                    # $using:computer
                     $server, $db, $file = GetParams ($using:computer)
                     $query = 'select * from Person.Person'
                     $currfile = $WORKFOLDER + $file + '-' + $db + '.csv'
                     # clearing noise for tests of bad connections
                     $ErrorActionPreference = 'SilentlyContinue'
-                    (Invoke-Sqlcmd3 $server $db $query) | Export-Csv -Path ($currfile) -NoTypeInformation 
+                    $null = (Invoke-Sqlcmd3 $server $db $query) | Export-Csv -Path ($currfile) -NoTypeInformation
+                    $filesize = (Get-ChildItem $currfile).Length  
+                    write-output ($filesize)
+                    return $filesize
                 }   # end of inlinescript 3
+
+                # Based on a condition we will suspend the workflow
+                if ($fsize -eq 0)
+                {
+                         Suspend-Workflow
+                }
                     
                 InlineScript # 4 compress files
                 {
@@ -57,20 +70,24 @@ workflow RunTasks
                     $currfile = $WORKFOLDER + $file + '-' + $db + '.csv'
                     # $filesize = (get-itemproperty $currfile).Length # this works the same 
                     $filesize = (Get-ChildItem $currfile).Length                
-                    if($filesize -gt 0) { & cmd /c compact /C $currfile }
+                    if($filesize -gt 0) 
+                    { 
+                        & cmd /c compact /C $currfile 
+                    }
+                    return $filesize
                 }  #end of inline script 4
                   
         }           # end of sequence		
    }	            # end of foreach -parallel
     
-   # Based on a condition we will suspend the workflow
-   if ((get-childitem -filter *.csv).count -eq 0)
-   {
-        Suspend-Workflow
-   }
+#    # Based on a condition we will suspend the workflow
+#    if ((get-childitem -filter *.csv).count -eq 0)
+#    {
+#         Suspend-Workflow
+#    }
 
    # test: if we do this, the mail is not sent
-   Suspend-Workflow
+#    Suspend-Workflow
    
     #    You cannot resume a workflow from within the workflow
 
@@ -84,10 +101,10 @@ workflow RunTasks
      $msg = ''
      foreach ($k in $lst)
      {
-         if ($k.Length -gt 0)
-         {
+        #  if ($k.Length -gt 0)
+        #  {
             $msg = $msg + $k.Name + [char]9 + $k.LastWriteTime + [char]13 + [char]10
-         }
+        #  }
      }
      $msg = $msg +  [char]13 + [char]10 + 'Emailed at ' + (get-date).tostring()
      SendMail $msg 'jbesada@carnival.com' '' 'WorkFlowProcess@noreply.com' 'Workflow Process Report'			
@@ -110,5 +127,14 @@ Write-Output " "
 Write-Output "Time after executing workflow"
 Write-Output (get-date).tostring()
 
-resume-job 
-get-job
+# resume-job *
+# get-job *
+# receive-job *
+Write-Output "Now we run any suspended job: this will restart the workflow from where it was suspended "
+Get-Job -State Suspended | Resume-Job -Wait| Wait-Job
+Write-Output "Time after resuming workflow"
+Write-Output (get-date).tostring()
+
+
+
+
