@@ -1,4 +1,11 @@
 ﻿<#
+ClusterCheck3.ps1
+Test version for checking IP addresses in cluster
+Last change:
+1/15/2020: added these clusters "CCLUATINFSHCL1", "ccluatshrd2cl1"
+5/29/2019: moved to \\CCLDEVSHRDDB1\e$\POWERSHELL
+11/9/2018: added checkping for the IP addresses
+
 Sources:
 https://www.howtogeek.com/117192/how-to-run-powershell-commands-on-remote-computers/
 https://kb.paessler.com/en/topic/69793-run-powershell-script-remotely-but-not-exchange-server
@@ -20,16 +27,16 @@ function GetClusterResources ($computerName)
     Remove-PSSession -computerName $computername
 }  
 
-#function Invoke-Sqlcmd3 ($ServerInstance,$Query, $Database)
-function Invoke-Sqlcmd3 ($ServerInstance,$Query)
+function Invoke-Sqlcmd3 ($ServerInstance,$Query, $Database)
+#function Invoke-Sqlcmd3 ($ServerInstance,$Query)
 <#
 	Chad Millers Invoke-Sqlcmd3
 #>
 {
 	$QueryTimeout=600
     $conn=new-object System.Data.SqlClient.SQLConnection
-#	$constring = "Server=" + $ServerInstance + ";Trusted_Connection=True;database=" + $Database
-    $constring = "Server=" + $ServerInstance + ";Trusted_Connection=True"
+	$constring = "Server=" + $ServerInstance + ";Trusted_Connection=True;database=" + $Database
+#    $constring = "Server=" + $ServerInstance + ";Trusted_Connection=True"
 	$conn.ConnectionString=$constring
     $conn.Open()
 	if($conn)
@@ -45,15 +52,48 @@ function Invoke-Sqlcmd3 ($ServerInstance,$Query)
 	}
 }
 
+function CheckPing($server)
+{
+	$v = (ping $server -n 1)
+	foreach ($k in $v)
+	{
+		if ($k.StartsWith("Reply"))
+		{
+			break
+		}
+		else
+		{
+			if ($k.StartsWith("Request timed out"))
+			{
+				return ""
+			}		
+		}
+	}
+	$l = $k.Replace('<', '=')
+	$lst = $l.split('=')[2]
+	if ($lst)
+	{
+		$r = $lst.Replace('ms TTL', '')
+	}
+	else
+	{
+		$r = ""
+	}		
+	return $r		
+}
+#$r = CheckPing('172.25.131.71')
+#$r
+
+
 #====================Program start======================================
-$SERVERNAME = "CCLUATSQL1\UATSQL3"
+$SERVERNAME = "CCLDEVSHRDDB1\DEVSQL2"
 #$path = Get-Location
-$CLUSTERNAMES = "ccldceshrdcl1", "ccluatdtscl2", "ccluatdtscl4" 
+$CLUSTERNAMES = "ccldceshrdcl1", "ccluatdtscl2", "ccluatdtscl4", "CCLUATSBLCL1", "CCLUATINFSHCL1", "ccluatshrd2cl1"
+#$CLUSTERNAMES = "CCLUATSBLCL1"
 $clusterset = @{}
 
 #truncate table first
-Invoke-Sqlcmd3 $SERVERNAME "truncate table Master_Application_List.[dbo].[CLUSTERS]"
-
+Invoke-Sqlcmd3 $SERVERNAME "truncate table Master_Application_List.[dbo].[CLUSTERS]" "master"
 foreach ($h in $CLUSTERNAMES)
 {
     $clusterset[$h] = GetClusterResources $h
@@ -64,11 +104,13 @@ foreach ($h in $CLUSTERNAMES)
             $m = $k.ToString().Replace("_", "|")
             $s = $h + '|' + $m
             $v = $s.Split("|")
-            $sql = "INSERT INTO Master_Application_List.[dbo].[CLUSTERS] ([ClusterMachine],[AG_Group],[IP_ADDRESS]) VALUES "
-            $sql = $sql + "('" + $v[0] + "','" + $v[1]  + "','" + $v[2] + "')"
-            Invoke-Sqlcmd3 $SERVERNAME $sql
+            $p = CheckPing($v[2])
+            $sql = "INSERT INTO Master_Application_List.[dbo].[CLUSTERS] ([ClusterMachine],[AG_Group],[IP_ADDRESS], [PING_RESPONSE]) VALUES "
+            $sql = $sql + "('" + $v[0] + "','" + $v[1]  + "','" + $v[2] +  "','" + $p + "')"
+            Invoke-Sqlcmd3 $SERVERNAME $sql "master"
         }
     }
 }
+
 #test print
 $clusterset
