@@ -161,22 +161,7 @@ $CheckPing =
     param ($server)
     . e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1	#ExecuteSQL imported here
     $ret = (Test-Connection -ComputerName $server -Count 1 -ErrorAction SilentlyContinue -Quiet) 
-#          $v = (ping $server -n 1)
-#          foreach ($k in $v)
-#          {
-#            if ($k.StartsWith("Reply"))
-#            { break }
-#            else
-#            { if ($k.StartsWith("Request timed out")) { return "" }	}
-#          }
-#          $l = $k.Replace('<', '=')
-#          $lst = $l.split('=')[2]
-#          if ($lst)
-#          { $ping = $lst.Replace('ms TTL', '') }
-#          else { $ping = "" }		
-#          $p = $ping.Trim()
-#          $p2 = [int]$p
-#          if ($p -gt "")  
+
     if ($ret)
     {
         $s = "INSERT INTO [Master_Application_List].[dbo].[SERVERS_LIVE_TODAY] (Machine) VALUES ('" + $server + "')"		

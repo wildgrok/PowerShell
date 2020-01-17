@@ -1,6 +1,7 @@
 <#
 version in \\CCLDEVSHRDDB1\e$\POWERSHELL
 last modified:
+#1/17/2020: many changes related to servers_live_today population
 12/11/2019: changed $SQL_Reload_EnvironmentsAndApplications
 11/12/2019
 Added ALL_SERVICES table truncate 
@@ -42,8 +43,23 @@ $SQL_Reload_EnvironmentsAndApplications =
 	order by a.[Environment] ,a.[Server]
 "@
 
-$SQL_GetSQLServers = 'select SqlServer from [Master_Application_List].[dbo].[VW_SQLSERVERS] order by SqlServer'
+$SQL_GetSQLServers_ALL = 'select SqlServer from [Master_Application_List].[dbo].[VW_SQLSERVERS] order by SqlServer'
+
+#NOTE: server_live_today must be populated before this call
+$SQL_GetSQLServers_Live = @"
+select a.SqlServer from [Master_Application_List].[dbo].[VW_SQLSERVERS]  a
+join [Master_Application_List].[dbo].[SERVERS_LIVE_TODAY] b on	
+	a.[SQLserver] like (b.Machine + '%') and
+	b.[Status] is null 
+order by SqlServer
+"@
+
+# this brings servers before the ping check
 $SQL_GetServers    = 'select Machine from [Master_Application_List].[dbo].[VW_SERVERS] order by Machine'
+
+# this brings servers AFTER the ping check
+$SQL_GetServers_Live = "SELECT [Machine] FROM [Master_Application_List].[dbo].[SERVERS_LIVE_TODAY] where status is null"
+
 $SQL_Get_DBSFromServer = 'set nocount on select name, state_desc as Online_Offline, @@version as SqlVersion from sys.databases where database_id > 4 order by name'
 $SQL_GetMissingFrom_ServersAndDatabases = 
 @"
