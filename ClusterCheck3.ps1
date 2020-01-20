@@ -2,6 +2,7 @@
 ClusterCheck3.ps1
 Test version for checking IP addresses in cluster
 Last change:
+1/17/2020: started to add back population of AG_IPADDRESS_CHECK
 1/15/2020: added these clusters "CCLUATINFSHCL1", "ccluatshrd2cl1"
 5/29/2019: moved to \\CCLDEVSHRDDB1\e$\POWERSHELL
 11/9/2018: added checkping for the IP addresses
@@ -85,15 +86,35 @@ function CheckPing($server)
 #$r
 
 
+$ExecuteSQL = 
+{	
+	param ($ServerInstance, $Query, $Database)
+	$QueryTimeout=600
+	$conn=new-object System.Data.SqlClient.SQLConnection
+	$constring = "Server=" + $ServerInstance + ";Trusted_Connection=True;database=" + $Database
+	$conn.ConnectionString=$constring
+	$conn.Open()
+	if($conn)
+	{
+    	$cmd=new-object System.Data.SqlClient.SqlCommand($Query,$conn)
+    	$cmd.CommandTimeout=$QueryTimeout
+    	$ds=New-Object System.Data.DataSet
+    	$da=New-Object System.Data.SqlClient.SqlDataAdapter($cmd)
+    	[void]$da.fill($ds)
+    	$conn.Close()
+		$ds.Tables[0]
+	}
+}
+
 #====================Program start======================================
 $SERVERNAME = "CCLDEVSHRDDB1\DEVSQL2"
-#$path = Get-Location
 $CLUSTERNAMES = "ccldceshrdcl1", "ccluatdtscl2", "ccluatdtscl4", "CCLUATSBLCL1", "CCLUATINFSHCL1", "ccluatshrd2cl1"
-#$CLUSTERNAMES = "CCLUATSBLCL1"
+
 $clusterset = @{}
 
 #truncate table first
-Invoke-Sqlcmd3 $SERVERNAME "truncate table Master_Application_List.[dbo].[CLUSTERS]" "master"
+# Invoke-Sqlcmd3 $SERVERNAME "truncate table Master_Application_List.[dbo].[CLUSTERS]" "master"
+$null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, "truncate table Master_Application_List.[dbo].[CLUSTERS]", "master"))
 foreach ($h in $CLUSTERNAMES)
 {
     $clusterset[$h] = GetClusterResources $h
@@ -107,10 +128,47 @@ foreach ($h in $CLUSTERNAMES)
             $p = CheckPing($v[2])
             $sql = "INSERT INTO Master_Application_List.[dbo].[CLUSTERS] ([ClusterMachine],[AG_Group],[IP_ADDRESS], [PING_RESPONSE]) VALUES "
             $sql = $sql + "('" + $v[0] + "','" + $v[1]  + "','" + $v[2] +  "','" + $p + "')"
-            Invoke-Sqlcmd3 $SERVERNAME $sql "master"
+			# Invoke-Sqlcmd3 $SERVERNAME $sql "master"
+			$null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $sql, "master"))			
         }
     }
 }
 
-#test print
-$clusterset
+
+#1/20/2020
+
+$SQL_LIST_AG_IPS = 
+@"
+SET NOCOUNT ON
+select l.dns_name, l.port, ip.ip_address, ip_subnet_mask, ip.state_desc, "Data_Center" =   
+      CASE   
+        WHEN ip.ip_address LIKE '10.224.%' THEN 'DCE    - Miami'
+        WHEN ip.ip_address LIKE '172.25%' THEN 'DCE (NON - PROD) - Miami' 
+	    WHEN ip.ip_address LIKE '10.244.%' THEN 'PEAK10 - Invalid' 
+	    WHEN ip.ip_address LIKE '10.56.%'  THEN 'DCC    - Dallas' 
+        ELSE 'UNKNOWN LOCATION - Invalid' 
+      END  
+from sys.availability_group_listener_ip_addresses ip  
+join sys.availability_group_listeners l on l.listener_id = ip.listener_id
+"@
+
+$SQL_Serverlist_AG = "SELECT distinct [Listener Name] + ',' + cast([Port] as varchar(10)) as 'Server' FROM [Master_Application_List].[dbo].[AG SQL Servers]"
+
+
+Write-Host "Start time AG and clusters " (get-date)
+# truncate table first
+$null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, 'truncate table Master_Application_List.[dbo].[AG_IPADDRESS_CHECK]', "master"))
+$SERVERLIST = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $SQL_Serverlist_AG, "master"))
+foreach ($k in $SERVERLIST)
+{
+	$svr = [char]34 + $k.Server + [char]34
+	$j = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($svr, $SQL_LIST_AG_IPS, "master"))
+    foreach ($r in $j)
+    {
+        $s = "INSERT INTO Master_Application_List.[dbo].[AG_IPADDRESS_CHECK]([dns_name],[port],[ip_address],[ip_subnet_mask],[state_desc],[Data_Center]) VALUES "
+        $s = $s + "('" + $r.dns_name + "','" + ,$r.port +  "','" +,$r.ip_address + "','" + $r.ip_subnet_mask + "','" + $r.state_desc + "','" + $r.Data_Center + "')"
+		$null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $s, "master"))
+    }
+}
+
+
