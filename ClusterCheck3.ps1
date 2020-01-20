@@ -28,30 +28,6 @@ function GetClusterResources ($computerName)
     Remove-PSSession -computerName $computername
 }  
 
-function Invoke-Sqlcmd3 ($ServerInstance,$Query, $Database)
-#function Invoke-Sqlcmd3 ($ServerInstance,$Query)
-<#
-	Chad Millers Invoke-Sqlcmd3
-#>
-{
-	$QueryTimeout=600
-    $conn=new-object System.Data.SqlClient.SQLConnection
-	$constring = "Server=" + $ServerInstance + ";Trusted_Connection=True;database=" + $Database
-#    $constring = "Server=" + $ServerInstance + ";Trusted_Connection=True"
-	$conn.ConnectionString=$constring
-    $conn.Open()
-	if($conn)
-    {
-    	$cmd=new-object System.Data.SqlClient.SqlCommand($Query,$conn)
-    	$cmd.CommandTimeout=$QueryTimeout
-    	$ds=New-Object System.Data.DataSet
-        $ds
-    	$da=New-Object System.Data.SqlClient.SqlDataAdapter($cmd)
-    	[void]$da.fill($ds)
-    	$conn.Close()
-    	$ds.Tables[0]
-	}
-}
 
 function CheckPing($server)
 {
@@ -110,10 +86,11 @@ $ExecuteSQL =
 $SERVERNAME = "CCLDEVSHRDDB1\DEVSQL2"
 $CLUSTERNAMES = "ccldceshrdcl1", "ccluatdtscl2", "ccluatdtscl4", "CCLUATSBLCL1", "CCLUATINFSHCL1", "ccluatshrd2cl1"
 
+Write-Host "Start time AG and clusters " (get-date)
+
 $clusterset = @{}
 
 #truncate table first
-# Invoke-Sqlcmd3 $SERVERNAME "truncate table Master_Application_List.[dbo].[CLUSTERS]" "master"
 $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, "truncate table Master_Application_List.[dbo].[CLUSTERS]", "master"))
 foreach ($h in $CLUSTERNAMES)
 {
@@ -128,7 +105,6 @@ foreach ($h in $CLUSTERNAMES)
             $p = CheckPing($v[2])
             $sql = "INSERT INTO Master_Application_List.[dbo].[CLUSTERS] ([ClusterMachine],[AG_Group],[IP_ADDRESS], [PING_RESPONSE]) VALUES "
             $sql = $sql + "('" + $v[0] + "','" + $v[1]  + "','" + $v[2] +  "','" + $p + "')"
-			# Invoke-Sqlcmd3 $SERVERNAME $sql "master"
 			$null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $sql, "master"))			
         }
     }
@@ -155,7 +131,7 @@ join sys.availability_group_listeners l on l.listener_id = ip.listener_id
 $SQL_Serverlist_AG = "SELECT distinct [Listener Name] + ',' + cast([Port] as varchar(10)) as 'Server' FROM [Master_Application_List].[dbo].[AG SQL Servers]"
 
 
-Write-Host "Start time AG and clusters " (get-date)
+
 # truncate table first
 $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, 'truncate table Master_Application_List.[dbo].[AG_IPADDRESS_CHECK]', "master"))
 $SERVERLIST = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $SQL_Serverlist_AG, "master"))
@@ -170,5 +146,5 @@ foreach ($k in $SERVERLIST)
 		$null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SERVERNAME, $s, "master"))
     }
 }
-
+Write-Host "End time AG and clusters " (get-date)
 
