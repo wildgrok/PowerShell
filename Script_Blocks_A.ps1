@@ -1,5 +1,6 @@
-# Script_Blocks_are_a_good_thing_B.ps1
-$ExecuteSQL = # Changing our function to a script block, easy
+# Script_Blocks_A.ps1
+
+$ExecuteSQL = 
 {	
 	param ($ServerInstance, $Query, $Database)
 	$QueryTimeout=0
@@ -18,12 +19,5 @@ $ExecuteSQL = # Changing our function to a script block, easy
 		$ds.Tables[0]
 	}
 }
-
-#Sample use:
-$server = "WORKSTATION\Sqlexpress"
-$database = "AdventureWorks2017"
-$query = 'select top 2 [FirstName],[LastName],[EmailPromotion] from Person.Person'
-# $r = Invoke-Sqlcmd3_db $server $query $database # comparing the the function call version
-$r = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($server, $query, $database))
-$r 
+"Script_Blocks_A.ps1 was called"
 
