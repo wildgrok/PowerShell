@@ -1,9 +1,9 @@
 # Jobs_Sample.ps1
 # Uses Job_CodeBlocks.ps1
 
-Set-Location C:\CODECAMP
+Set-Location C:\WORKFLOWS
 # magic here, we know this works importing all script blocks
-. C:\CODECAMP\Jobs_CodeBlocks.ps1
+. C:\WORKFLOWS\Jobs_CodeBlocks.ps1
 
 $listofservers = Get-Content -Path 'DBLIST_ACTIONS.TXT'
 $CONCURRENCY = 10

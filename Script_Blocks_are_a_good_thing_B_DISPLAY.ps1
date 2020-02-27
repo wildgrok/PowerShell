@@ -20,10 +20,8 @@ $ExecuteSQL = # Changing our function to a script block, easy
 }
 
 #Sample use:
-# $server = "WORKSTATION\Sqlexpress"
-# $database = "AdventureWorks2017"
-$server = "CCLDEVSQL4\DEVSQL2"
-$database = "AdventureWorks2008R2"
+$server = "WORKSTATION\Sqlexpress"
+$database = "AdventureWorks2017"
 $query = 'select top 2 [FirstName],[LastName],[EmailPromotion] from Person.Person'
 # comparing to the the function call version
 # $r = Invoke-Sqlcmd3_db $server $query $database 
@@ -31,4 +29,5 @@ $query = 'select top 2 [FirstName],[LastName],[EmailPromotion] from Person.Perso
 # $r = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($server, $query, $database))
 $r = & $ExecuteSQL $server $query $database
 $r 
+
 

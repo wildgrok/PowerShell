@@ -1,6 +1,6 @@
 # Jobs_Sample.ps1 uses Job_CodeBlocks.ps1
-Set-Location C:\CODECAMP
-. C:\CODECAMP\Jobs_CodeBlocks.ps1 # magic here, we know this works
+Set-Location C:\WORKFLOWS
+. C:\WORKFLOWS\Jobs_CodeBlocks.ps1 # magic here, we know this works
 
 $listofservers = Get-Content -Path 'DBLIST_ACTIONS.TXT'
 $CONCURRENCY = 10
@@ -9,7 +9,6 @@ $CONCURRENCY = 10
 Get-Job | Remove-Job -Force
 "Done."
 " "
-
 foreach ($k in $listofservers)
 {
     $a = $k.Split('|') #assign to variables for clarity

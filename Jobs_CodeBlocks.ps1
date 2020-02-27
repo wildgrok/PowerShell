@@ -112,7 +112,7 @@ $GetBackups =
 $RestoreDatabase = 
 {
 	param ($server,$backupfile, $dbname1, $dbname2, $logfolder, $datafolder, $restore_options)
-. C:\CODECAMP\Jobs_CodeBlocks.ps1	
+. C:\WORKFLOWS\Jobs_CodeBlocks.ps1	
 <#
     Restores the database from given backup file to given data and log folders
     Uses file names based on database name with _Data and _Log suffixes
@@ -205,7 +205,7 @@ $RestoreLogs =
 {
   param ($server,$backupfile, $dbname1, $dbname2, $restore_options)
   # Remember the magic: 
-  . C:\CODECAMP\Jobs_CodeBlocks.ps1	
+  . C:\WORKFLOWS\Jobs_CodeBlocks.ps1	
   <#
       Restores the log from given single backup file log or folder with log backups
       Options for $restore_options['restore_type'] are:

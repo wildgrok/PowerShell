@@ -16,7 +16,7 @@ workflow Run-Workflow
         InlineScript
         {
           "Executing first sequence items ..."
-          . C:\CODECAMP\Real_Workflow_CodeBlocks.ps1
+          . C:\WORKFLOWS\Real_Workflow_CodeBlocks.ps1
           $a = ($using:k).Split('|')
           $SOURCESERVER,$BACKUPFILE,$SOURCEDB,$DESTSERVER = $a[0],$a[1],$a[2],$a[3]
           $DATAFOLDER,$LOGFOLDER,$DESTDB,$ACTIONS         = $a[4],$a[5],$a[6],$a[7]      	
@@ -69,7 +69,7 @@ workflow Run-Workflow
     }         
 }         # end of workflow	
 
-Set-Location C:\CODECAMP
+Set-Location C:\WORKFLOWS
 $list = (Get-Content -Path 'DBLIST_ACTIONS.TXT' | where { $_.Contains("|Y") })
 Run-Workflow -listofservers ($list)
 

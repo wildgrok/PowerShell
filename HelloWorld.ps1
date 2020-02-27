@@ -1,14 +1,11 @@
 # we create the workflow
 workflow HelloWorld
 {
-    # Write-Host "The workflow starts here"
     InlineScript
     {
         "Before starting parallel process"
         Get-Date
     }
-
-    # "Ok not using Write-host here this works"
 
     parallel 
     {
@@ -29,3 +26,5 @@ workflow HelloWorld
 
 # and we execute the workflow
 HelloWorld
+
+

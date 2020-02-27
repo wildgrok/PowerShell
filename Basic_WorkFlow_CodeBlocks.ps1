@@ -1,6 +1,6 @@
 ﻿# Basic_WorkFlow_CodeBlocks.ps1 - used by Basic_WorkFlow.ps1   
 # There is method in the madness: put your scriptblocks and functions here
-$WORKFOLDER = 'C:\CODECAMP\' 	# convenient place for a global value
+$WORKFOLDER = 'C:\WORKFLOWS\' 	# convenient place for a global value
 function Invoke-Sqlcmd3 ($ServerInstance,$Database, $Query) # Chad Miller's Invoke-Sqlcmd3
 {
 	$QueryTimeout=600
