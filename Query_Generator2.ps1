@@ -1,35 +1,41 @@
 ﻿
 #﻿Query_Generator2.ps1
 #version in 
-#C:\Users\jorgebe\Documents\powershell
+#C:\TEMP
 #Last Modified:
-#10/17/2019: fixed issue with $SQL_tables_column query
-#10/16/2019: changed for select only, no procs 
-
+#4/29/2020: added [ and ] to table and column names
+#4/20/2020: using it for TableGames in xxdevsql3
 
 
 #-------globals-----------------------------
-#$path = 'C:\Users\jorgebe\Documents\genesis\change_tracking_genesis\deployment'
-#$path = 'C:\Users\jorgebe\Documents\genesis\JackpotBlitz\Data Strategy Data Transfer Service\DEPLOYMENT'
-$path = 'C:\Users\jorgebe\Documents\powershell'
+#$path = 'C:\TEMP\genesis\change_tracking_genesis\deployment'
+#$path = 'C:\TEMP\genesis\JackpotBlitz\Data Strategy Data Transfer Service\DEPLOYMENT'
+$path = 'C:\TEMP\deployment'
 
 Set-Location $path
-$CURRENT_DATABASE = "TableGames"
-$WEBMETHODS_DATABASE = "TableGames"
-$CURRENT_SERVER   = 'CCLDEVSBXDB1\CCLDEVSBXDB1'
+# $CURRENT_DATABASE = "TableGames"
+# $CURRENT_SERVER   = 'XXDEVSQL3'
+#$CURRENT_DATABASE = "Genesis_Breeze"
+#$WEBMETHODS_DATABASE = "WM_AUDIT"
+#$CURRENT_SERVER   = 'XXDEVSQL3'
+#$CURRENT_DATABASE = "TableGames"
+#$CURRENT_SERVER   = 'XXDEVSQL3'
+#$CURRENT_DATABASE = "Genesis_Breeze"
+#$WEBMETHODS_DATABASE = "WM_AUDIT"
+#$CURRENT_SERVER   = 'XXDEVSQL3'
+
+$CURRENT_DATABASE = "DebitCard_Data"
+$CURRENT_SERVER   = 'STSQL6.SHIPTECH.CARNIVAL.COM,3655'
 #$CURRENT_DATABASE = "Genesis_Breeze"
 #$WEBMETHODS_DATABASE = "WM_AUDIT"
 #$CURRENT_SERVER   = 'XXDEVSQL3'
 
 
 $CRLF = [char]13 + [char]10
-
-$s = "select  (s.name + '.' + t.name) as 'table', a.name as 'column' from " + $CURRENT_DATABASE + ".sys.columns a "
+$s = "select  (s.name + '.[' + t.name + ']') as 'table', '[' +  a.name + ']' as 'column' from " + $CURRENT_DATABASE + ".sys.columns a "
 $s = $s + "join " + $CURRENT_DATABASE +  ".sys.tables t on 	a.object_id = t.object_id "
-$s = $s + "join " + $CURRENT_DATABASE + ".sys.change_tracking_tables c on c.object_id = t.object_id "
-$s = $s + "JOIN " + $CURRENT_DATABASE + ".sys.schemas s ON t.[schema_id] = s.[schema_id]"
-$SQL_tables_column = $s
-
+$s = $s + "join " + $CURRENT_DATABASE +  ".sys.change_tracking_tables c on c.object_id = t.object_id "
+$SQL_tables_column = $s + "JOIN " + $CURRENT_DATABASE +  ".sys.schemas s ON t.[schema_id] = s.[schema_id]"
 
 #-------functions---------------------------
 function Invoke-Sqlcmd3 ($ServerInstance, $Query)
@@ -59,14 +65,32 @@ function BuildScriptsOneTable ($database, $table, $colarray)
 {
         #---loop start
         Write-Host 'database ' $CURRENT_DATABASE
-        Write-Host 'wm database ' $WEBMETHODS_DATABASE
         Write-Host 'table ' $table
         Write-Host 'columns ' $colarray
         # Now build the sql for deltas--------------------------------------
         $s = 'SET NOCOUNT ON' + $CRLF
-        $s = $s + 'GO' + $CRLF    
+        $s = $s + 'GO' + $CRLF  
+        
+        <#
+        declare @synchid bigint
+        declare @max_synch bigint
+        set @synchid = CHANGE_TRACKING_CURRENT_VERSION();
+        set @max_synch = ?;
+        #>
+
+
+
+
+
+
+
         $s = $s + 'declare @synchid bigint' + $CRLF
-        $s = $s + 'set @synchid = CHANGE_TRACKING_CURRENT_VERSION() -1;' + $CRLF
+        $s = $s + 'declare @max_synch bigint' + $CRLF
+        
+
+        #$s = $s + 'set @synchid = CHANGE_TRACKING_CURRENT_VERSION() -1;' + $CRLF
+        $s = $s + 'set @synchid = CHANGE_TRACKING_CURRENT_VERSION();' + $CRLF
+        $s = $s + 'set @max_synch = ?;'  + $CRLF
         $s = $s + "SELECT " + $CRLF
         $cnt = 0
         # ----columns loop start-------------------
@@ -91,16 +115,22 @@ function BuildScriptsOneTable ($database, $table, $colarray)
         # -----columns loop end------
         $s = $s + ' FROM ' + $table + ' AS p'  + $CRLF
         $s = $s + 'RIGHT OUTER JOIN ' + $CRLF
-        $s = $s + 'CHANGETABLE(CHANGES ' + $table + ', @synchid) AS CT ON ' + $CRLF
+        #$s = $s + 'CHANGETABLE(CHANGES ' + $table + ', @synchid) AS CT ON ' + $CRLF
+        $s = $s + 'CHANGETABLE(CHANGES ' + $table + ', @max_synch) AS CT ON ' + $CRLF
         $s = $s + 'P.' + $colarray[0] + ' = CT.' + $colarray[0] + ' ' + $CRLF
+        $s = $s + 'Where @synchid > @max_synch'  + $CRLF
         Write-Host $s
-        Set-Content ($CURRENT_DATABASE + '_' + $table + '_' + 'DELTA_DATA.sql') $s     
+        $filename = $table.Replace('[', '')
+        $filename = $filename.Replace(']', '')
+
+        Set-Content ($CURRENT_DATABASE + '_' + $filename + '_' + 'DELTA_DATA.sql') $s     
         # -- end of deltas--------------------------------------------------      
 }
 
 function CreateDict
 {
-    $p = Invoke-Sqlcmd3 ([char]34 + $CURRENT_SERVER + [char]34) $SQL_tables_column
+    #$p = Invoke-Sqlcmd3 ([char]34 + $CURRENT_SERVER + [char]34) $SQL_tables_column
+    $p = Invoke-Sqlcmd3 $CURRENT_SERVER $SQL_tables_column
     $dict = @{}
     $alreadyprocessed = ""
     foreach ($k in $p)
@@ -129,19 +159,18 @@ function CreateDict
 }
 
 
-function Process
+function RunProcess
 {
-    $dict = CreateDict
+    $dict2 = CreateDict
 #    $dict
     #keys are the tables. looping to create scripts for each
-    foreach ($k in $dict.Keys)
+    foreach ($k in $dict2.Keys)
     {
         Write-Host "processing " $k
         #BuildScriptsOneTable $database, $table, $colarray
-        $colarray = $dict[$k].split(",")
+        $colarray = $dict2[$k].split(",")
         BuildScriptsOneTable $CURRENT_DATABASE $k $colarray
-    
     }
 }
 
-Process
+RunProcess
