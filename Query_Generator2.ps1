@@ -30,9 +30,15 @@ $CURRENT_SERVER   = 'STSQL6.SHIPTECH.CARNIVAL.COM,3655'
 #$WEBMETHODS_DATABASE = "WM_AUDIT"
 #$CURRENT_SERVER   = 'XXDEVSQL3'
 
+# $CURRENT_DATABASE = "Tablegames"
+# $CURRENT_SERVER   = '10.111.242.35,1433'
+# $USER = 'Jbesada'
+# $PASSWORD = 'Carnival99!'
+
+
 
 $CRLF = [char]13 + [char]10
-$s = "select  (s.name + '.[' + t.name + ']') as 'table', '[' +  a.name + ']' as 'column' from " + $CURRENT_DATABASE + ".sys.columns a "
+$s = "select  ('[' + s.name + '].[' + t.name + ']') as 'table', '[' +  a.name + ']' as 'column' from " + $CURRENT_DATABASE + ".sys.columns a "
 $s = $s + "join " + $CURRENT_DATABASE +  ".sys.tables t on 	a.object_id = t.object_id "
 $s = $s + "join " + $CURRENT_DATABASE +  ".sys.change_tracking_tables c on c.object_id = t.object_id "
 $SQL_tables_column = $s + "JOIN " + $CURRENT_DATABASE +  ".sys.schemas s ON t.[schema_id] = s.[schema_id]"
@@ -60,6 +66,31 @@ function Invoke-Sqlcmd3 ($ServerInstance, $Query)
 	}
 }
 
+#standard security version
+function Invoke-Sqlcmd3_Std ($ServerInstance, $Database, $User, $Password ,$Query)
+<#
+	Chad Millers Invoke-Sqlcmd3
+#>
+{
+	$QueryTimeout=1200
+    $conn=new-object System.Data.SqlClient.SQLConnection
+	$constring = "Server=" + $ServerInstance + ";database=" + $Database + ";User Id=" + $User + ";Password=" + $Password + ";"
+	$conn.ConnectionString=$constring
+    $conn.Open()
+    if($conn)
+    {
+    	$cmd=new-object System.Data.SqlClient.SqlCommand($Query,$conn)
+    	$cmd.CommandTimeout=$QueryTimeout
+    	$ds=New-Object System.Data.DataSet
+    	$da=New-Object System.Data.SqlClient.SqlDataAdapter($cmd)
+    	[void]$da.fill($ds)
+    	$conn.Close()
+    	$ds.Tables[0]
+    }
+}
+
+
+
 
 function BuildScriptsOneTable ($database, $table, $colarray)
 {
@@ -71,19 +102,6 @@ function BuildScriptsOneTable ($database, $table, $colarray)
         $s = 'SET NOCOUNT ON' + $CRLF
         $s = $s + 'GO' + $CRLF  
         
-        <#
-        declare @synchid bigint
-        declare @max_synch bigint
-        set @synchid = CHANGE_TRACKING_CURRENT_VERSION();
-        set @max_synch = ?;
-        #>
-
-
-
-
-
-
-
         $s = $s + 'declare @synchid bigint' + $CRLF
         $s = $s + 'declare @max_synch bigint' + $CRLF
         
@@ -130,6 +148,9 @@ function BuildScriptsOneTable ($database, $table, $colarray)
 function CreateDict
 {
     #$p = Invoke-Sqlcmd3 ([char]34 + $CURRENT_SERVER + [char]34) $SQL_tables_column
+    #Invoke-Sqlcmd3_Std ($ServerInstance, $Database, $User, $Password ,$Query)
+    #use for $CURRENT_SERVER   = '10.111.242.35,1433'
+    #$p = Invoke-Sqlcmd3_Std $CURRENT_SERVER $CURRENT_DATABASE $USER $PASSWORD $SQL_tables_column
     $p = Invoke-Sqlcmd3 $CURRENT_SERVER $SQL_tables_column
     $dict = @{}
     $alreadyprocessed = ""
