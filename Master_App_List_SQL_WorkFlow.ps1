@@ -113,6 +113,7 @@ UPDATE u
 	u.[Database] = s.Database_Name		
 "@
 
+#changed to left join 1/28/2020
 #Enabled 9/1/2016
 $SQL_UpdateFrom_EnvironmentsAndApplicationsBACKUP = 
 @"
@@ -130,7 +131,7 @@ UPDATE u
       --,u.[LastUpdated] = <LastUpdated, datetime,>
 
 FROM [Master_Application_List].[dbo].[Environments And Applications] u
-RIGHT JOIN [Master_Application_List].[dbo].[Environments And Applications BACKUP] s on
+LEFT JOIN [Master_Application_List].[dbo].[Environments And Applications BACKUP] s on
 	u.[Server] = s.[Server] AND
 	u.[Database] = s.[Database]
 "@

@@ -2,6 +2,7 @@
 ClusterCheck3.ps1
 Test version for checking IP addresses in cluster
 Last change:
+1/21/2020: added cluster CCLUATGSTCL1
 1/17/2020: started to add back population of AG_IPADDRESS_CHECK
 1/15/2020: added these clusters "CCLUATINFSHCL1", "ccluatshrd2cl1"
 5/29/2019: moved to \\CCLDEVSHRDDB1\e$\POWERSHELL
@@ -84,7 +85,8 @@ $ExecuteSQL =
 
 #====================Program start======================================
 $SERVERNAME = "CCLDEVSHRDDB1\DEVSQL2"
-$CLUSTERNAMES = "ccldceshrdcl1", "ccluatdtscl2", "ccluatdtscl4", "CCLUATSBLCL1", "CCLUATINFSHCL1", "ccluatshrd2cl1"
+#1/21/2020: added CCLUATGSTCL1
+$CLUSTERNAMES = "ccldceshrdcl1", "ccluatdtscl2", "ccluatdtscl4", "CCLUATSBLCL1", "CCLUATINFSHCL1", "ccluatshrd2cl1", "CCLUATGSTCL1"
 
 Write-Host "Start time AG and clusters " (get-date)
 

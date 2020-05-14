@@ -1,32 +1,30 @@
 #getdiskspace_production.ps1
+#version in ccldevshrddb1 e:\powershell
 #version in c:\temp (from getdiskpace.ps1 in ccldevshrddb1\e$\powershell, 5/11/2020)
-#last modified:5/12/2020
-#workflow Run-Workflow 
-#{
-#InlineScript 
-#{
+#last modified:5/13/2020
         
 $PERCENTFREE    = 10
 # $PERCENTFREE_CD = 5
 # $RETENTION = 15
-$global:WORKFOLDER 	=	'C:\TEMP'
+$global:WORKFOLDER 	=	'E:\POWERSHELL'
 $WEBFOLDER 			= 	'\\ccldevshrddb1\c$\Inetpub\wwwroot\sqldba'
-$WEBPAGE			= 'http://ccldevshrddb1/sqldba/check_space_production_test.htm'
-# $SERVERLIST     	= $global:WORKFOLDER + '\SQL_Access_Status_Saurabh_Full_Simple.csv'
-$SERVERLIST     	= $global:WORKFOLDER + '\SQL_Access_Status_Saurabh_SHORTLIST.csv'
-$EMAILTOLIST 		= 'jbesada@carnival.com'
-#$EMAILTOLIST 		= 'DL-SQLDBAS@carnival.com'
+$WEBPAGE			= 'http://ccldevshrddb1/sqldba/check_space_production.htm'
+$SERVERLIST     	= $global:WORKFOLDER + '\SQL_Access_Status_Saurabh_Full_Simple.csv'
+# $SERVERLIST     	= $global:WORKFOLDER + '\SQL_Access_Status_Saurabh_SHORTLIST.csv'
+#$EMAILTOLIST 		= 'jbesada@carnival.com'
+$EMAILTOLIST 		= 'DL-SQLDBAS@carnival.com'
 $FROM           	= "DiskSpaceCheckProduction@noreply.com"
 $SUBJECT        	= "DiskSpace Production - Servers Report"
 # $LOGMESSAGE     	= ""
-$LOGFILE 	    	= $WEBFOLDER + '\check_space_production_test.htm'
-$LOWSPACEFILE   	= $global:WORKFOLDER + '\lowspace_production_report_test.txt'
-$STORAGE_DATABASE	= 'PerformanceStore_Reports'
-$STORAGE_SERVER		= 'CCLDEVSHRDDB1\DEVSQL2'
+$LOGFILE 	    	= $WEBFOLDER + '\check_space_production.htm'
+$LOWSPACEFILE   	= $global:WORKFOLDER + '\lowspace_production_report.txt'
+# $STORAGE_DATABASE	= 'PerformanceStore_Reports'
+# $STORAGE_SERVER		= 'CCLDEVSHRDDB1\DEVSQL2'
 $PROCESS_STARTED = get-date
+####CHANGED
+$DISKSPACE_REPORT = $global:WORKFOLDER + '\production_daily_disk_data.csv'
 
-
-#-----------------functions-------------------------------------
+#--------------------------FUNCTIONS START--------------------------------
 function Write_to_CSV($array, $file)
 {
     Set-Content -Path $file 'Server,Machine,Drive,Total,Free,Free%'
@@ -39,8 +37,6 @@ function Write_to_CSV($array, $file)
     }
     Add-Content -Path $file -Value $storage
 }
-
-
 function ExtractMachine($server)
 {
     if ($server.Contains('\'))
@@ -84,9 +80,6 @@ function ProcessServers($Serverlist)
     # $yesterdaydata = ""
     # $todaydata = ""
     #$Computers = (Get-Content -Path $Serverlist) | sort
-    $trc = "TRUNCATE TABLE " + $STORAGE_DATABASE + ".[dbo].[DISKSPACE_PRODUCTION]"
-    $w = Invoke-Sqlcmd3 $STORAGE_SERVER $trc
-
     $Computers = Import-Csv -Path $Serverlist | Sort-Object ServerName
     $memory = ''
     foreach ($sv in $Computers) #--------------start big foreach----------------------------
@@ -94,9 +87,9 @@ function ProcessServers($Serverlist)
         $z = ExtractMachine($sv.ServerName)
         
         if (($z -gt "") -and ($z[0] -ne "#") -and ($z -ne $memory))
-        {     
-            ####CHANGED    
-            #$fullreport = $fullreport + "Server : " + $z + [char]10
+        {    
+            ####CHANGED     
+            # $fullreport = $fullreport + "Server : " + $z + [char]10
             $erroractionpreference = "SilentlyContinue"
             $q = ListDrives($z)
             $a = $q.GetEnumerator() | sort-object -Property deviceID
@@ -113,17 +106,10 @@ function ProcessServers($Serverlist)
                     # $j = $k.systemname + "|" + $k.deviceid + "|" + $ksize + "|" + $kfreespace + "|" + $percent
                     $j = $z + "|" + $k.systemname + "|" + $k.deviceid + "|" + $ksize + "|" + $kfreespace + "|" + $percent
 #------------------------------------------------------------------------------
-                    # [SERVER] [varchar](100) NULL,
-                    # [COMPUTER] [varchar](100) NULL,
-                    # [DRIVE] [varchar](10) NULL,
-                    # [DISKSIZE] [varchar](50) NULL,
-                    # [DISKFREE] [varchar](50) NULL,
-                    # [FREEPERCENT] [varchar](50) NULL,
-                    # [TIMERECORDED] [datetime] NOT NULL
-					$insline = $j.Replace('|', "','")
-					$sqlinsert = "INSERT INTO " + $STORAGE_DATABASE + ".[dbo].[DISKSPACE_PRODUCTION]([SERVER],[COMPUTER],[DRIVE],[DISKSIZE],[DISKFREE],[FREEPERCENT]) "
-                    $sqlinsert = $sqlinsert + "VALUES('" + $insline + "')"
-					$w = Invoke-Sqlcmd3 $STORAGE_SERVER $sqlinsert
+					# $insline = $j.Replace('|', "','")
+					# $sqlinsert = "INSERT INTO " + $STORAGE_DATABASE + ".[dbo].[DISKSPACE_HISTORY]([COMPUTER],[DRIVE],[DISKSIZE],[DISKFREE],[FREEPERCENT]) "
+					# $sqlinsert = $sqlinsert + "VALUES('" + $insline + "')"
+					# $w = Invoke-Sqlcmd3 $STORAGE_SERVER $sqlinsert
 #------------------------------------------------------------------------------					
 					
 #					if ($k.deviceid -eq 'C:' -or $k.deviceid -eq 'D:')
@@ -182,6 +168,7 @@ function SendMail ($report,$emailarray,$attacharray,$from,$subject)
     $smtp.Send($msg)
 }
 
+####CHANGED
 function MakeHTML($message, $header="")
 {
 	$header = "<H1>" + $header + "</H1>"
@@ -201,6 +188,24 @@ function MakeHTML($message, $header="")
     $OUTARRAY + "</body></html>" + [char]10 
     return $OUTARRAY
 }
+
+
+
+####CHANGED
+# function MakeHTML($message, $header="")
+# {
+# 	$header = "<H1>" + $header + "</H1>"
+#     $OUTARRAY = "",""
+# 	$OUTARRAY + $header + [char]10
+#     $OUTARRAY + "<html><body>" + [char]10 
+#     $LST = $message.Split([char]10)
+#     foreach ($x in $LST)
+#     {
+#        $OUTARRAY + $x + "<br>" + [char]10 
+#     }
+#     $OUTARRAY + "</body></html>" + [char]10 
+#     return $OUTARRAY
+# }
 
 #function SaveDay($record)
 #{
@@ -233,7 +238,8 @@ function Invoke-Sqlcmd3
 	}
 }
 
-#-----------------functions end-------------------------------------
+#----------------------END OF FUNCTIONS---------------------------------------------------
+
 
 
 #-----------Program Starts Here-------------------------------------------------------------------------------------
@@ -248,14 +254,10 @@ Set-Location $global:WORKFOLDER
 #the third item is the list of links for lowspace drives
 #fourth is list of missing or added drives
 $r = ProcessServers $SERVERLIST
-# $r['fullreport']
-# $r['fullreport']   | Select-Object * | Export-Csv -Path .\FullReport.Csv -NoTypeInformation
-# Get-Content -Path .\FullReport.Csv
-$file = "c:\temp\data.csv"
-Write_to_CSV $r['fullreport'] $file 
-
+####CHANGED
 # $disksreport = ''        
 # $drivesmessage = ''
+Write_to_CSV $r['fullreport'] $DISKSPACE_REPORT
 #==========================================================
 
 $LOGMESSAGE0 = 'Process started' + [char]10 + $PROCESS_STARTED + [char]10
@@ -275,6 +277,7 @@ $LOGMESSAGE0 = 'Process started' + [char]10 + $PROCESS_STARTED + [char]10
 # $LOGMESSAGE1 = $LOGMESSAGE1 + [char]10 + '---Drives with lowspace - End   ---' + [char]10 + [char]10
 $LOGMESSAGE2 = 'Full Report' + [char]10
 ####CHANGED
+# $LOGMESSAGE2 = $LOGMESSAGE2 + 'Drive|Total|Free|Free%' + [char]10
 $LOGMESSAGE2 = $LOGMESSAGE2 + 'Server|Machine|Drive|Total|Free|Free%' + [char]10
 $LOGMESSAGE2 = $LOGMESSAGE2 + $r['fullreport'] + [char]10
 $LOGMESSAGE2 = $LOGMESSAGE2 + 'Process completed ' + [char]10
@@ -283,6 +286,7 @@ $LOGMESSAGE2 = $LOGMESSAGE2 + (get-date) + [char]10
 #Send email
 ####CHANGED
 $hd = "Disk Space Report - server|machine|drive|disksize|diskfree|freepercent " + (Get-Date).ToString()
+# $hd = "Disk Space Report - server|drive|disksize|diskfree|freepercent " + (Get-Date).ToString()
 # $g = MakeHTML ($LOGMESSAGE0 + $LOGMESSAGE1 + $LOGMESSAGE2) $hd
 $g = MakeHTML ($LOGMESSAGE0  + $LOGMESSAGE2) $hd
 $g > $LOGFILE
@@ -302,9 +306,3 @@ $msg = ''
 $msg = $msg + [char]10 + "Link to full report today" + [char]10 + $WEBPAGE + [char]10
 $msg > $LOWSPACEFILE
 SendMail $msg  $EMAILTOLIST $LOGFILE $FROM $SUBJECT
-
-        
-#} #endregion of inlinescript
-#} #endregion of workflow
-#
-#Run-Workflow

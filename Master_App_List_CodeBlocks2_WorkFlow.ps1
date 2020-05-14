@@ -9,6 +9,7 @@
 # Filename:  Master_App_List_CodeBlocks2_WorkFlow.ps1
 #changed 10/18/2019 $CheckPing
 # added $GetServices
+# changed 5/4/2020: if ($ret -eq $True)
 #========================================================================
 
 #===========================functions and scriptblocks=================================================     
@@ -162,7 +163,8 @@ $CheckPing =
     . e:\POWERSHELL\Master_App_List_CodeBlocks_WorkFlow.ps1	#ExecuteSQL imported here
     $ret = (Test-Connection -ComputerName $server -Count 1 -ErrorAction SilentlyContinue -Quiet) 
 
-    if ($ret)
+    # if ($ret -eq $True)
+    if ($ret.ToString() -eq 'True')
     {
         $s = "INSERT INTO [Master_Application_List].[dbo].[SERVERS_LIVE_TODAY] (Machine) VALUES ('" + $server + "')"		
     }

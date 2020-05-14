@@ -5,6 +5,7 @@ made from Master_app_List_version4.ps1
 Uses Master_app_List_CodeBlocks_WorkFlow.ps1 and Master_app_List_CodeBlocks2_WorkFlow.ps1
 Created: 9/13/2019 
 Last updated:
+#4/28/2020: changed foreach –parallel -ThrottleLimit 500 (chekcing issues with servers_live_today)
 #1/17/2020: many changes related to servers_live_today population
 9/24/2019: commented the sequence statements, also tested inlinescript for each line, did not work, much longer exec time
 9/18/2019: full test with workflow files
@@ -53,7 +54,7 @@ workflow Run-Workflow
     # this section processes the servers (not sql servers)
     #  Changed: original list conatins all servers , now from this list we get the list after ping check 
     # table servers-live_today is populated after this step
-    foreach –parallel -ThrottleLimit 50 ($k in $listofservers)
+    foreach –parallel -ThrottleLimit 500 ($k in $listofservers)
     {	  
         InlineScript        # first set of actions to be completed in parallel: ping related                  
         { 
@@ -64,6 +65,9 @@ workflow Run-Workflow
 		}                                          
     }       #end of foreach -parallel 
 
+    # added 4/28/2020
+    Start-Sleep -s 15
+
     $listofservers_live = InlineScript 
     {
         . e:\POWERSHELL\Master_App_List_SQL_WorkFlow.ps1   
@@ -73,7 +77,7 @@ workflow Run-Workflow
         return $serverlist_live
 	}  
 
-    foreach –parallel -ThrottleLimit 50 ($k in $listofservers_live)
+    foreach –parallel -ThrottleLimit 500 ($k in $listofservers_live)
     {	   
         InlineScript        # second set of actions to be completed in parallel: machine related                  
         { 
@@ -145,7 +149,8 @@ workflow Run-Workflow
         $m =  "End time misc steps and program " + (get-date).ToString()
         $m
         #==========================End of misc steps ========================     
-	}
+    }
+    
     
 }   #end of workflow
 

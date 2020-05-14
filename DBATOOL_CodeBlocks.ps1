@@ -13,11 +13,16 @@
 # Organization: 
 # Filename:     
 #========================================================================
+$SERVERNAME     = 'CCLDEVSHRDDB1\DEVSQL2'
+$WORKFOLDER     = 'E:\POWERSHELL'
+$SQLFOLDER      = $WORKFOLDER + '\DBATOOL_SQL'
+
+#Set-Location $WORKFOLDER
 
 $ExecuteSQL = 
 {	
 	param ($ServerInstance, $Query, $Database)
-	$QueryTimeout=600
+	$QueryTimeout=0
 	$conn=new-object System.Data.SqlClient.SQLConnection
 	$constring = "Server=" + $ServerInstance + ";Trusted_Connection=True;database=" + $Database
 	$conn.ConnectionString=$constring
@@ -34,7 +39,6 @@ $ExecuteSQL =
 	}
 }
 
-##CHANGED 7/25/2019
 $GetBackupInfo = 
 {
 	param ($server, $backupfile)
@@ -98,9 +102,38 @@ $GetLatestBackup =
 	}
 }
 <#
-$url = '\\Ccldevsql4\devsql2\SQLBACKUPS\SQLBackupUser'
-$filter= 'ZZZ_Deleteme_1_*.bak'
+$url = '\\Cclprddtsdb1e\sqlbackups\SQLBackupUser'
+$filter= 'Goccl_Sitecore_Core_*.bak'
 $lst = (Invoke-Command -ScriptBlock $GetLatestBackup -ArgumentList ($url, $filter))
+$lst
+#>
+
+
+#new 9/30/2019
+$GetFolderFiles = 
+<# Brings list of files based on filter and on column to sort (default is Name) #>
+{	
+	param ($url, $filter='*.*', $sort='Name')
+	$list = [System.Collections.ArrayList]@()
+#    $list = [System.Collections.ArrayList]::new()
+#    $lst2 = Get-ChildItem  $url  | Sort-Object -Property LastWriteTime -Descending #-ErrorAction SilentlyContinue 
+	$lst2 = Get-ChildItem  $url  | Sort-Object -Property $sort #-Descending #-ErrorAction SilentlyContinue 
+	foreach ($k in $lst2)
+	{
+		if ($k.name -like $filter)
+		{
+			[void]$list.Add($k.Name)
+#            $list.Add($k.Name)
+		}
+	}
+	return $list
+}
+<#
+$url = '\\Ccldevsql4\devsql2\SQLBACKUPS\SQLBackupUser'
+$filter= 'ZZZ_Deleteme_1_*.trn'
+$lst = (Invoke-Command -ScriptBlock $GetFolderFiles -ArgumentList ($url, $filter, 'Name'))
+$lst
+$lst = (Invoke-Command -ScriptBlock $GetFolderFiles -ArgumentList ($url, $filter, 'LastWriteTime'))
 $lst
 #>
 

@@ -1,7 +1,10 @@
-#version in C:\Users\jorgebe\Documents\powershell\MasterApplicationList
+<#
+version in \\CCLDEVSHRDDB1\e$\POWERSHELL
+last modified: 
+9/9/2019: added [sys].configurations check
+#>
+
 $SQL_Reload_EnvironmentsAndApplications = @"
-	truncate table [Master_Application_List].[dbo].[Servers and Databases]
-	truncate table [Master_Application_List].[dbo].[Environments And Applications]
 	INSERT INTO [Master_Application_List].[dbo].[Environments And Applications]
 	(
 	[Application_Name]
@@ -72,12 +75,12 @@ UPDATE u
 	  from [Master_Application_List].[dbo].[Environments And Applications] u
  JOIN [Master_Application_List].[dbo].[Servers and Databases] s on
 	u.[Server] = s.[SqlServer]
-UPDATE u
-   SET 
-      u.[SqlVersion] = s.sqlversion
-	  from [Master_Application_List].[dbo].[Environments And Applications BACKUP] u
- JOIN [Master_Application_List].[dbo].[Servers and Databases] s on
-	u.[Server] = s.[SqlServer]
+--UPDATE u
+--   SET 
+--      u.[SqlVersion] = s.sqlversion
+--	  from [Master_Application_List].[dbo].[Environments And Applications BACKUP] u
+-- JOIN [Master_Application_List].[dbo].[Servers and Databases] s on
+--	u.[Server] = s.[SqlServer]
 	
 UPDATE u
    SET 
@@ -87,13 +90,13 @@ UPDATE u
 	u.[Server] = s.[SqlServer]  and
 	u.[Database] = s.Database_Name
 	
-UPDATE u
-   SET 
-      u.[Online_Offline] = s.[Online_Offline]
-	  from [Master_Application_List].[dbo].[Environments And Applications BACKUP] u
- JOIN [Master_Application_List].[dbo].[Servers and Databases] s on
-	u.[Server] = s.[SqlServer]  and
-	u.[Database] = s.Database_Name			
+--UPDATE u
+--   SET 
+--      u.[Online_Offline] = s.[Online_Offline]
+--	  from [Master_Application_List].[dbo].[Environments And Applications BACKUP] u
+-- JOIN [Master_Application_List].[dbo].[Servers and Databases] s on
+--	u.[Server] = s.[SqlServer]  and
+--	u.[Database] = s.Database_Name			
 "@
 
 #Enabled 9/1/2016
@@ -281,7 +284,8 @@ case file_id
 	when 2 then 'Log'
 	when 1 then 'Data'
 	else 'Other' 
-end as 'Type'
+end as 'Type',
+size
 FROM sys.master_files
 "@
 
@@ -301,3 +305,24 @@ join sys.availability_group_listeners l on l.listener_id = ip.listener_id
 "@
 
 $SQL_Serverlist_AG = "SELECT distinct [Listener Name] + ',' + cast([Port] as varchar(10)) as 'Server' FROM [Master_Application_List].[dbo].[AG SQL Servers]"
+
+$SQL_sys_configurations = 
+@"
+SET NOCOUNT ON
+SELECT [name], value  
+FROM [sys].configurations 
+WHERE [name] in 
+(
+'Remote access',               -- Should be 0
+'cross db ownership chaining', -- Should be 0
+'Scan for startup procs',      -- Should be 0
+'clr enabled',                 -- Should be 0
+'Default trace enabled',       -- Should be 1
+'Remote admin connections',    -- Should be 0
+'Database Mail XPs',           -- Should be 0
+'Ole Automation Procedures',   -- Should be 0
+'Xp_cmdshell',                 -- Should be 0
+'Ad Hoc Distributed Queries'   -- Should be 0
+)
+order by [name]
+"@

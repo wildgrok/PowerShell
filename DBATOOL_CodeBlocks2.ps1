@@ -5,7 +5,8 @@
 # version in CCLDEVSHRDDB1\e$\Powershell
 # Created by:   jorgebe
 # Used by DBATOOL.ps1 in e:\Powershell
-# Last modified: 
+# Last modified:
+# 11/14/2019: Added option to script only 
 # 7/29/2019: fixed filter in getlatestbackup in SQLSMO2.ps1
 # 7/25/2019: fixed GetBackupInfo (removed extra parameter) in SQLSMO2.ps1
 # 6/24/2019 commented sqlfileheader call (causing timeouts)
@@ -13,7 +14,12 @@
 # Organization: 
 # Filename:     
 #========================================================================
+# this is imported from DBATOOL_CodeBlocks.ps1
+# $SERVERNAME     = 'CCLDEVSHRDDB1\DEVSQL2'
+# $WORKFOLDER     = 'E:\POWERSHELL'
+# $SQLFOLDER      = $WORKFOLDER + '\DBATOOL_SQL'
 
+Set-Location $WORKFOLDER
 
 $RestoreDatabase = 
 {
@@ -21,18 +27,19 @@ $RestoreDatabase =
 #	param ($server,$backupfile, $dbname1, $dbname2, $logfolder, $datafolder, $restore_options_recovery)
     param ($m)
 
-    #needed to import ExecuteSQL, GetLatestBackup, GetBackupInfo used by RestoreDatabase
+	# needed to import ExecuteSQL, GetLatestBackup, GetBackupInfo used by RestoreDatabase
+	# also brings globals $SERVERNAME, $WORKFOLDER, $SQLFOLDER
     . E:\powershell\DBATOOL_CodeBlocks.ps1	
     <#
     Restores the database from given backup file to given data and log folders
     Uses file names based on database name with _Data and _Log suffixes
     GetBackupInfo returns dictionary with these keys populated
 	$dict_backup['sqlfilelist'] 
-	$dict_backup['sqlfileheader'] 
+	$dict_backup['sqlfileheader'] (NOT USING THIS NOW, too slow and not needed at this time)
 		
 	Options for $restore_options['restore_type'] are:
 	DATABASE
-	DIFFERENTIAL
+	DIFFERENTIAL (not implemented yet)
 	If option is LOG returns 
 	options for $restore_options['recovery'] are:
 	RECOVERY
@@ -69,11 +76,11 @@ $RestoreDatabase =
 	}
 	else
 	{
-		"Latest backup from folder"
+		# "Latest backup from folder"
 		$filter = $SOURCEDB + '_*.bak'
 		$bkfile = (Invoke-Command -ScriptBlock $GetLatestBackup -ArgumentList ($BACKUPFILE, $filter))
 		$backupfile2 = $BACKUPFILE + '\' + $bkfile
-		$backupfile2		
+		# $backupfile2		
 	}
 	
 	$dict_backup = (Invoke-Command -ScriptBlock $GetBackupInfo -ArgumentList ($SOURCESERVER, $backupfile2))
@@ -93,15 +100,14 @@ $RestoreDatabase =
 		if ($x.Type -eq 'L')
 		{
             $suffix = 'Log'
-            $logfilename = $x.logicalname
 			$file_renamed = $DESTDB + '_' + $suffix + $ext
-			$s = $s + ' MOVE ' + [char]39 + $x.logicalname + [char]39 + ' TO ' + [char]39 + $logfolder + '\' + $file_renamed + [char]39 + ', '
+			$s = $s + ' MOVE ' + [char]39 + $x.logicalname + [char]39 + ' TO ' + [char]39 + $LOGFOLDER + '\' + $file_renamed + [char]39 + ', '
 		}
         else  # any other type (D,F,S) we put in the Data folder
 		{
             $suffix = 'Data'
 			$file_renamed = $DESTDB + '_' + $suffix + $suffix2 + $ext
-			$s = $s + ' MOVE ' + [char]39 + $x.logicalname + [char]39 + ' TO ' + [char]39 + $datafolder + '\' + $file_renamed + [char]39 + ', '
+			$s = $s + ' MOVE ' + [char]39 + $x.logicalname + [char]39 + ' TO ' + [char]39 + $DATAFOLDER + '\' + $file_renamed + [char]39 + ', '
 		}       
         $filecount = $filecount + 1
 	} # end of database file loop	
@@ -117,12 +123,25 @@ $RestoreDatabase =
     $s1 = $s1 + ' SELECT @kill = @kill + ' + [char]39 + 'kill ' + [char]39 + '  + CONVERT(varchar(5), spid) + ' + [char]39 + ';' + [char]39
     $s1 = $s1 + ' FROM master..sysprocesses WHERE dbid = db_id(' + [char]39 + $DESTDB + [char]39 + ') '
     $s1 = $s1 + ' EXEC(@kill); '
-	$null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SOURCESERVER, $s1, "master"))
-	$null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SOURCESERVER, $s, "master"))
+	# $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SOURCESERVER, $s1, "master"))
+	$null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($DESTSERVER, $s1, "master"))
+	#If passing the option to script only, return script
+	if ($ENABLED -eq 'S')
+	{ 
+		$d = $DESTSERVER.Replace('\', '_').Replace(',', '_')
+		Set-Content -Path ($SQLFOLDER + '\' + $d + '_' + $DESTDB + '_' + $ACTIONS + '.SQL') $s
+		return $s
+	}
+	else 
+	{ 
+		$null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SOURCESERVER, $s, "master"))
+	}
+		 	
 	if ($restore_options_recovery -eq 'RECOVERY')
 	{
 		$s1 = 'ALTER AUTHORIZATION ON DATABASE::[' + $DESTDB + '] TO [sa]' +  [char]13 + [char]10
-		$null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SOURCESERVER, $s1, $DESTDB))
+		# $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SOURCESERVER, $s1, $DESTDB))
+		$null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($DESTSERVER, $s1, $DESTDB))
 	}		
 	$s = $s + [char]13 + [char]10 + $s1
 	return $s
@@ -132,11 +151,6 @@ $RestoreDatabase =
 
 $RestoreLogs = 
 {
-#	param ($server,$backupfile, $dbname1,$dbname2, $restore_options)
-	#param ($server,$backupfile, $dbname, $logfolder, $datafolder, $restore_options)
-    # Is this needed? this is not calling extra codeblocks
-    # YES IT IS NEEDED - it is calling ExecuteSQL!!!
-#    . E:\powershell\DBATOOL_CodeBlocks.ps1	
     <#
     Restores the log from given single backup file log or folder with log backups
 	Options for $restore_options['restore_type'] are:
@@ -144,7 +158,7 @@ $RestoreLogs =
 	DIFFERENTIAL
 	LOG
 	If option is not LOG returns 
-	options for $restore_options['recovery'] are:
+	options for $restore_options_recovery are:
 	RECOVERY
 	NORECOVERY	
 	Sample
@@ -180,16 +194,11 @@ $RestoreLogs =
 	{		
 		$restore_options_recovery = 'NORECOVERY'
 	}
-    
-    
-    
-	# just checking 
-#	if ($restore_options['restore_type'] -ne 'LOG') { return }	
-	
+    	
 	# if passing a folder get latest backup on it
 	if ($BACKUPFILE -like '*.trn') #single backup passed
 	{
-		"Restoring from file"
+		# "Restoring from file"
 		$BACKUPFILE
 	}
 	else #we are restoring from network folder with several backups
@@ -220,11 +229,56 @@ $RestoreLogs =
 	}	
 	if ($restore_options_recovery -eq 'RECOVERY')
 	{
-		$s = $s + ' RESTORE DATABASE ' + $DESTDB + ' WITH RECOVERY;' +  [char]13 + [char]10
+		$s = $s + ' RESTORE DATABASE [' + $DESTDB + '] WITH RECOVERY;' +  [char]13 + [char]10
 
 	}
-	$null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SOURCESERVER, $s, "master"))
-	return $s
+	if ($ENABLED -eq 'S')
+	{
+		$d = $DESTSERVER.Replace('\', '_').Replace(',', '_')
+		Set-Content -Path ($SQLFOLDER + '\' + $d + '_' + $DESTDB + '_' + $ACTIONS + '.SQL') $s
+		return $s
+	}
+	else
+	{
+		# $null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SOURCESERVER, $s, "master"))
+		$null = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($DESTSERVER, $s, "master"))
+	}
+	return $s	
+}
+
+#working on this
+$SQLActions = 
+{
+    param ($m)
+    #needed to import ExecuteSQL, GetFolderFiles
+    . E:\powershell\DBATOOL_CodeBlocks.ps1	    
+    $a = $m.Split('|')
+    $SOURCESERVER = $a[0]
+	$BACKUPFILE = $a[1]
+#	$SOURCEDB = $a[2]
+#	$DESTSERVER = $a[3]
+#	$DATAFOLDER = $a[4]
+#	$LOGFOLDER = $a[5]
+#	$DESTDB = $a[6]
+	$ACTIONS = $a[7]
+#	$ENABLED = $a[8]
+    $out = @{}
+    
+    if ($ACTIONS -eq 'SQL_ALL')
+	{		
+        $filter= '*.SQL'
+        $lst = (Invoke-Command -ScriptBlock $GetFolderFiles -ArgumentList ($BACKUPFILE, $filter, 'Name'))
+        foreach ($k in $lst)
+        {
+			#SAVING SCRIPT OUTPUTS
+			#get contents in s
+			$s = Get-Content ($SQLFOLDER + '\' + $k)
+			#get output of executed s, save it in out
+			$s2 = (Invoke-Command -ScriptBlock $ExecuteSQL -ArgumentList ($SOURCESERVER, $s, $DESTDB))
+            $out[$k] = $s2           
+	    }     
+    }  
+    return $out
 }
 
 

@@ -5,6 +5,7 @@
 # Created by:   jorgebe
 # Used by SQLSMO2.ps1 in e:\Powershell
 # Last modified: 
+# 7/29/2019: fixed filter in getlatestbackup in SQLSMO2.ps1
 # 7/25/2019: fixed GetBackupInfo (removed extra parameter) in SQLSMO2.ps1
 # 6/24/2019 commented sqlfileheader call (causing timeouts)
 
@@ -159,7 +160,8 @@ $GetLatestBackup =
 	Returns folder contents sorted by modified date
     Sample use:
     $backupfolder = '\\SERVERNAME\SQLBackups1\SQLBackupUser'
-	$filter = '\DATABASE_*.bak'
+	Filter is case sensitive
+	$filter = 'DatabaseName_*.bak'
     This brings all files:
     $lst = (Invoke-Command -ScriptBlock $GetLatestBackup -ArgumentList ($backupfolder)
     Here we bring a subset using filter string
@@ -168,6 +170,7 @@ $GetLatestBackup =
 #>
 {	
 	param ($url, $filter='*.bak')
+	
 	$lst2 = Get-ChildItem  $url  | Sort-Object -Property LastWriteTime -Descending -ErrorAction SilentlyContinue 
 	foreach ($k in $lst2)
 	{
@@ -176,9 +179,13 @@ $GetLatestBackup =
 			return $k.name
 		}
 	}
-#	return $files
 }
-
+<# 
+$url = '\\Cclprddtsdb1e\sqlbackups\SQLBackupUser'
+$filter='CCLRegData_*.bak'
+$lst = (Invoke-Command -ScriptBlock $GetLatestBackup -ArgumentList ($url, $filter))
+$lst
+#>
 
 $GetBackups = 
 <#
